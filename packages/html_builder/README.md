@@ -8,6 +8,10 @@
 
 This package builds HTML AST's and renders them to HTML. It can be used as an internal DSL, i.e. for a templating engine.
 
+## Requirements
+
+* Dart SDK: 2.12.x or later
+
 ## Installation
 
 In your `pubspec.yaml`:

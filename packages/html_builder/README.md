@@ -1,6 +1,6 @@
 # Betaluk Html Builder
 
-[![version](https://img.shields.io/badge/pub-v3.0.0-brightgreen)](https://pub.dartlang.org/packages/belatuk_html_builder)
+[![version](https://img.shields.io/badge/pub-v3.0.1-brightgreen)](https://pub.dartlang.org/packages/belatuk_html_builder)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/packages/html_builder/LICENSE)
 
@@ -89,8 +89,8 @@ Rendering to HTML:
 String html = StringRenderer().render($dom);
 ```
 
-Example with the [Angel3](https://pub.dev/packages/angel3_framework) backend framework,
-which has [dedicated html_builder support](https://github.com/dukefirehawk/angel/tree/html):
+Example implementation with the [Angel3](https://pub.dev/packages/angel3_framework) backend framework,
+which uses [dedicated html_builder package](https://github.com/dukefirehawk/angel/tree/html):
 
 ```dart
 import 'dart:io';

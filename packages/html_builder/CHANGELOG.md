@@ -1,5 +1,9 @@
 # Change Log
 
+## 3.0.1
+
+* Update broken link in pubspec
+
 ## 3.0.0
 
 * Upgraded from `pendantic` to `lints` linter

@@ -2,7 +2,7 @@
 
 [![version](https://img.shields.io/badge/pub-v3.0.0-brightgreen)](https://pub.dartlang.org/packages/belatuk_html_builder)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
-[![License](https://img.shields.io/github/license/dukefirehawk/angel)](https://github.com/dart-backend/belatuk-common-utilities/packages/html_builder/LICENSE)
+[![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/packages/html_builder/LICENSE)
 
 **Replacement of `package:html_builder` with breaking changes to support NNBD.**
 
@@ -14,7 +14,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_html_builder: ^2.0.0
+  belatuk_html_builder: ^3.0.0
 ```
 
 ## Usage

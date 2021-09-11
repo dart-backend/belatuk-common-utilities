@@ -1,6 +1,6 @@
 # Belatuk Code Buffer
 
-[![version](https://img.shields.io/badge/pub-v3.0.0-brightgreen)](https://pub.dartlang.org/packages/belatuk_code_buffer)
+[![version](https://img.shields.io/badge/pub-v3.0.1-brightgreen)](https://pub.dartlang.org/packages/belatuk_code_buffer)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/packages/code_buffer/LICENSE)
 

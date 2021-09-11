@@ -1,8 +1,9 @@
 # Belatuk Pub Sub
 
-[![version](https://img.shields.io/badge/pub-v4.0.0-brightgreen)](https://pub.dartlang.org/packages/belatuk_pub_sub)
+[![version](https://img.shields.io/badge/pub-v4.0.1-brightgreen)](https://pub.dartlang.org/packages/belatuk_pub_sub)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
-[![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/packages/pub_sub/LICENSE)
+
+**Replacement of `package:pub_sub` with breaking changes to support NNBD.**
 
 Keep application instances in sync with a simple pub/sub API.
 

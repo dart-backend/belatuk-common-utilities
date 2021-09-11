@@ -4,10 +4,11 @@
 
 * Upgraded from `pendantic` to `lints` linter
 * Published as `belatuk_combinator` package
+* Resolved static analysis warnings
 
 ## 2.0.2
 
-* Resolve static analysis warnings
+* Resolved static analysis warnings
 
 ## 2.0.1
 

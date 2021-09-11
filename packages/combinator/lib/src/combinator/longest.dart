@@ -34,7 +34,9 @@ class _Longest<T> extends Parser<T> {
 
       if (result.successful && result.span != null) {
         results.add(result);
-      } else if (parser is _Alt) errors.addAll(result.errors);
+      } else if (parser is _Alt) {
+        errors.addAll(result.errors);
+      }
 
       args.scanner.position = replay;
     }
@@ -70,7 +72,9 @@ class _Longest<T> extends Parser<T> {
 
       if (result.successful) {
         results.add(result);
-      } else if (parser is _Alt) errors.addAll(result.errors);
+      } else if (parser is _Alt) {
+        errors.addAll(result.errors);
+      }
 
       args.scanner.position = replay;
     }

@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:angel3_combinator/belatuk_combinator.dart';
+import 'package:belatuk_combinator/belatuk_combinator.dart';
 import 'package:string_scanner/string_scanner.dart';
 
 /// Parse a part of a decoded Basic auth string.
@@ -33,7 +33,7 @@ final Parser credentialString = match<Map<String, String>?>(
   return credentials.parse(scanner).value;
 });
 
-final Parser basic = match<Null>('Basic').space();
+final Parser basic = match<void>('Basic').space();
 
 final Parser basicAuth = basic.then(credentialString).index(1);
 

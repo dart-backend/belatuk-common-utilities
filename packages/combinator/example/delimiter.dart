@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:angel3_combinator/belatuk_combinator.dart';
+import 'package:belatuk_combinator/belatuk_combinator.dart';
 import 'package:string_scanner/string_scanner.dart';
 
 final Parser<String> id =

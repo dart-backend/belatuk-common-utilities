@@ -15,7 +15,7 @@ Parser<T> any<T>(Iterable<Parser<T>> parsers,
 class _Any<T> extends Parser<T> {
   final Iterable<Parser<T>> parsers;
   final bool backtrack;
-  final errorMessage;
+  final dynamic errorMessage;
   final SyntaxErrorSeverity severity;
 
   _Any(this.parsers, this.backtrack, this.errorMessage, this.severity);

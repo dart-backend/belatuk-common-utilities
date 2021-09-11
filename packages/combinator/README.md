@@ -4,6 +4,8 @@
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/packages/combinator/LICENSE)
 
+**Replacement of `package:combinator` with breaking changes to support NNBD.**
+
 Packrat parser combinators that support static typing, generics, file spans, memoization, and more.
 
 **RECOMMENDED:**

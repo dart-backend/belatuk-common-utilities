@@ -1,5 +1,9 @@
 # Change Log
 
+## 4.0.1
+
+* Updated README
+
 ## 4.0.0
 
 * Upgraded from `pendantic` to `lints` linter

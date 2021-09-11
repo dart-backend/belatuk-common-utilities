@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:angel3_combinator/belatuk_combinator.dart';
+import 'package:belatuk_combinator/belatuk_combinator.dart';
 import 'package:string_scanner/string_scanner.dart';
 
 Parser jsonGrammar() {
@@ -51,13 +51,13 @@ Parser jsonGrammar() {
 }
 
 void main() {
-  var JSON = jsonGrammar();
+  var json = jsonGrammar();
 
   while (true) {
     stdout.write('Enter some JSON: ');
     var line = stdin.readLineSync()!;
     var scanner = SpanScanner(line, sourceUrl: 'stdin');
-    var result = JSON.parse(scanner);
+    var result = json.parse(scanner);
 
     if (!result.successful) {
       for (var error in result.errors) {

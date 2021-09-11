@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'dart:io';
-import 'package:angel3_combinator/belatuk_combinator.dart';
+import 'package:belatuk_combinator/belatuk_combinator.dart';
 import 'package:string_scanner/string_scanner.dart';
 
 /// Note: This grammar does not handle precedence, for the sake of simplicity.
@@ -22,7 +22,7 @@ Parser<num> calculatorGrammar() {
     alternatives.add(
       chain<num>([
         expr.space(),
-        match<Null>(op).space() as Parser<num>,
+        match<void>(op).space() as Parser<num>,
         expr.space(),
       ]).map((r) => f(r.value![0], r.value![2])),
     );

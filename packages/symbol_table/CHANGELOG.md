@@ -4,6 +4,7 @@
 
 * Upgraded from `pendantic` to `lints` linter
 * Published as `belatuk_symbol_table` package
+* Fixed linter warnings
 
 ## 2.0.2
 

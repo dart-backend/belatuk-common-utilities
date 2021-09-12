@@ -1,4 +1,4 @@
-import 'package:angel3_symbol_table/angel3_symbol_table.dart';
+import 'package:belatuk_symbol_table/belatuk_symbol_table.dart';
 import 'package:test/test.dart';
 
 void main() {

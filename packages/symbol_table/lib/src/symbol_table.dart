@@ -139,7 +139,9 @@ class SymbolTable<T> {
 
   void _wipeLookupCache(String key) {
     _lookupCache.remove(key);
-    _children.forEach((c) => c._wipeLookupCache(key));
+    for (var c in _children) {
+      c._wipeLookupCache(key);
+    }
   }
 
   /// Use [create] instead.

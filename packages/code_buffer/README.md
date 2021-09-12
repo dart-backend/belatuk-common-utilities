@@ -1,8 +1,8 @@
 # Belatuk Code Buffer
 
-[![version](https://img.shields.io/badge/pub-v3.0.1-brightgreen)](https://pub.dev/packages/belatuk_code_buffer)
+[![version](https://img.shields.io/badge/pub-v3.0.2-brightgreen)](https://pub.dev/packages/belatuk_code_buffer)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
-[![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/packages/code_buffer/LICENSE)
+[![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/code_buffer/LICENSE)
 
 **Replacement of `package:code_buffer` with breaking changes to support NNBD.**
 

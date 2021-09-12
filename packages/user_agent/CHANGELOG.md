@@ -1,9 +1,14 @@
 # Change Log
 
-## 3.0.2
+## 3.1.0
 
+* Fixed license link
 * Upgraded from `pendantic` to `lints` linter
 * Fixed linter warnings
+  
+## 3.0.2
+
+* Updated repository links
 
 ## 3.0.1
 

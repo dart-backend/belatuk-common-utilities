@@ -1,5 +1,5 @@
 name: belatuk_merge_map
-version: 3.0.1
+version: 3.0.2
 description: Combine multiple Maps into one. Equivalent to Object.assign in JS.
 homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/merge_map
 environment:

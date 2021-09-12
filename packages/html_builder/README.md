@@ -1,8 +1,8 @@
 # Betaluk Html Builder
 
-[![version](https://img.shields.io/badge/pub-v3.0.1-brightgreen)](https://pub.dev/packages/belatuk_html_builder)
+[![version](https://img.shields.io/badge/pub-v3.0.2-brightgreen)](https://pub.dev/packages/belatuk_html_builder)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
-[![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/packages/html_builder/LICENSE)
+[![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/html_builder/LICENSE)
 
 **Replacement of `package:html_builder` with breaking changes to support NNBD.**
 

@@ -1,8 +1,8 @@
 # Belatuk Combinator
 
-[![version](https://img.shields.io/badge/pub-v3.0.0-brightgreen)](https://pub.dev/packages/belatuk_combinator)
+[![version](https://img.shields.io/badge/pub-v3.0.1-brightgreen)](https://pub.dev/packages/belatuk_combinator)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
-[![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/packages/combinator/LICENSE)
+[![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/combinator/LICENSE)
 
 **Replacement of `package:combinator` with breaking changes to support NNBD.**
 

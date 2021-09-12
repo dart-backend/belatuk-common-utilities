@@ -1,6 +1,6 @@
 # Belatuk Combinator
 
-[![version](https://img.shields.io/badge/pub-v3.0.0-brightgreen)](https://pub.dartlang.org/packages/belatuk_combinator)
+[![version](https://img.shields.io/badge/pub-v3.0.0-brightgreen)](https://pub.dev/packages/belatuk_combinator)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/packages/combinator/LICENSE)
 

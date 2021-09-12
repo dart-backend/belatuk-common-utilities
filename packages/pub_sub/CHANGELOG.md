@@ -1,5 +1,9 @@
 # Change Log
 
+## 4.0.2
+
+* Updated README
+
 ## 4.0.1
 
 * Updated README
@@ -7,7 +11,7 @@
 ## 4.0.0
 
 * Upgraded from `pendantic` to `lints` linter
-* Published as `belatuk_combinator` package
+* Published as `belatuk_pub_sub` package
 
 ## 3.0.2
 

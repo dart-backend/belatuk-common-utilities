@@ -1,5 +1,9 @@
 # Change Log
 
+## 3.0.1
+
+* Fixed boken license link
+
 ## 3.0.0
 
 * Upgraded from `pendantic` to `lints` linter

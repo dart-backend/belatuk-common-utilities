@@ -1,11 +1,11 @@
-name: angel3_symbol_table
-version: 2.0.2
+name: belatuk_symbol_table
+version: 3.0.0
 description: A generic symbol table implementation in Dart, with support for scopes and constants.
-homepage: https://github.com/dukefirehawk/angel/tree/angel3/packages/symbol_table
+homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/symbol_table
 environment:
   sdk: '>=2.12.0 <3.0.0'
 dependencies:
   collection: ^1.15.0  
 dev_dependencies:
   test: ^1.17.4
-  pedantic: ^1.11.0
+  lints: ^1.0.0

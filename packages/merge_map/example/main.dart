@@ -1,4 +1,4 @@
-import 'package:angel3_merge_map/angel3_merge_map.dart';
+import 'package:belatuk_merge_map/belatuk_merge_map.dart';
 
 void main() {
   // ignore: omit_local_variable_types

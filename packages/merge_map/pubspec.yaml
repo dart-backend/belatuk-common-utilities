@@ -1,9 +1,9 @@
-name: angel3_merge_map
-version: 2.0.2
+name: belatuk_merge_map
+version: 3.0.0
 description: Combine multiple Maps into one. Equivalent to Object.assign in JS.
-homepage: https://github.com/dukefirehawk/angel/tree/angel3/packages/merge_map
+homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/merge_map
 environment:
   sdk: '>=2.12.0 <3.0.0'
 dev_dependencies:
   test: ^1.17.4
-  pedantic: ^1.11.0
+  lints: ^1.0.0

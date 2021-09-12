@@ -4,6 +4,7 @@
 
 * Upgraded from `pendantic` to `lints` linter
 * Published as `belatuk_range_header` package
+* Fixed linter warnings
 
 ## 3.0.2
 

@@ -1,4 +1,4 @@
-import 'package:angel3_range_header/angel3_range_header.dart';
+import 'package:belatuk_range_header/belatuk_range_header.dart';
 import 'package:test/test.dart';
 
 final Matcher throwsRangeParseException =

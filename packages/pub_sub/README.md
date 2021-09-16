@@ -1,6 +1,6 @@
 # Belatuk Pub Sub
 
-[![version](https://img.shields.io/badge/pub-v4.0.3-brightgreen)](https://pub.dev/packages/belatuk_pub_sub)
+![Pub Version (including pre-releases)](https://img.shields.io/pub/v/belatuk_pub_sub?include_prereleases)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/pub_sub/LICENSE)
 

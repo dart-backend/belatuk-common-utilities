@@ -1,6 +1,6 @@
 # User Agent Analyzer
 
-[![version](https://img.shields.io/badge/pub-v3.1.0-brightgreen)](https://pub.dev/packages/user_agent_analyzer)
+![Pub Version (including pre-releases)](https://img.shields.io/pub/v/user_agent_analyzer?include_prereleases)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/user_agent/LICENSE)
 

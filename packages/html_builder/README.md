@@ -1,6 +1,6 @@
 # Betaluk Html Builder
 
-[![version](https://img.shields.io/badge/pub-v3.0.2-brightgreen)](https://pub.dev/packages/belatuk_html_builder)
+![Pub Version (including pre-releases)](https://img.shields.io/pub/v/belatuk_html_builder?include_prereleases)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/html_builder/LICENSE)
 

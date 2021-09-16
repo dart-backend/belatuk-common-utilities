@@ -1,6 +1,6 @@
 # Belatuk Merge Map
 
-[![version](https://img.shields.io/badge/pub-v3.0.2-brightgreen)](https://pub.dev/packages/belatuk_merge_map)
+![Pub Version (including pre-releases)](https://img.shields.io/pub/v/belatuk_merge_map?include_prereleases)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/merge_map/LICENSE)
 

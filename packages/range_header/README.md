@@ -1,6 +1,6 @@
 # Belatuk Range Header
 
-[![version](https://img.shields.io/badge/pub-v4.0.1-brightgreen)](https://pub.dev/packages/belatuk_range_header)
+![Pub Version (including pre-releases)](https://img.shields.io/pub/v/belatuk_range_header?include_prereleases)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/range_header/LICENSE)
 

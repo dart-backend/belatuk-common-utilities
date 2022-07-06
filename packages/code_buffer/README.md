@@ -14,7 +14,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_code_buffer: ^3.0.0
+  belatuk_code_buffer: ^4.0.0
 ```
 
 ## Usage

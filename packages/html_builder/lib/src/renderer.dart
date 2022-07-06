@@ -59,7 +59,9 @@ class _StringRendererImpl implements StringRenderer {
         buf.write((html5 != false) ? '>' : '/>');
       } else {
         buf.write('>');
-        node.children.forEach((child) => _renderInto(child, buf));
+        for (var child in node.children) {
+          _renderInto(child, buf);
+        }
         buf.write('</${node.tagName}>');
       }
     }
@@ -118,7 +120,9 @@ class _PrettyStringRendererImpl implements StringRenderer {
         buf.write((html5 != false) ? '>' : '/>');
       } else {
         buf.write('>');
-        node.children.forEach((child) => _renderInto(tabs + 1, child, buf));
+        for (var child in node.children) {
+          _renderInto(tabs + 1, child, buf);
+        }
         buf.writeln();
         _applyTabs(tabs, buf);
         buf.write('</${node.tagName}>');

@@ -33,6 +33,12 @@ class Node {
         const MapEquality<String, dynamic>()
             .equals(other.attributes, attributes);
   }
+
+  @override
+  int get hashCode {
+    int hash = Object.hash(tagName, Object.hashAll(children));
+    return Object.hash(hash, Object.hashAll(attributes.values));
+  }
 }
 
 /// Represents a self-closing tag, i.e. `<br>`.
@@ -60,4 +66,7 @@ class TextNode extends Node {
 
   @override
   bool operator ==(other) => other is TextNode && other.text == text;
+
+  @override
+  int get hashCode => text.hashCode;
 }

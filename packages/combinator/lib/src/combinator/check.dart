@@ -19,7 +19,7 @@ class _Check<T> extends Parser<T> {
         SyntaxError(
           severity,
           errorMessage ??
-              matcher.describe(StringDescription('Expected ')).toString() + '.',
+              '${matcher.describe(StringDescription('Expected '))}.',
           result.span,
         ),
       ]);

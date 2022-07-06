@@ -15,7 +15,7 @@ class _ToList<T> extends ListParser<T> {
 
     var values = <T>[];
     if (result.value != null) {
-      values.add(result.value!);
+      values.add(result.value as T);
     }
     return ParseResult(
       args.trampoline,

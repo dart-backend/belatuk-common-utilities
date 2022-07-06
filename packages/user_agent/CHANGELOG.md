@@ -1,5 +1,9 @@
 # Change Log
 
+## 4.0.0
+
+* Require Dart >= 2.17
+
 ## 3.1.0
 
 * Fixed license link

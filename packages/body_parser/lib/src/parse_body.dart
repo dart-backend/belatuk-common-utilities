@@ -12,7 +12,7 @@ import 'file_upload_info.dart';
 import 'map_from_uri.dart';
 
 /// Forwards to [parseBodyFromStream].
-@deprecated
+@Deprecated("parseBodyFromStream")
 Future<BodyParseResult> parseBody(HttpRequest request,
     {bool storeOriginalBuffer = false}) {
   return parseBodyFromStream(
@@ -135,7 +135,7 @@ class _BodyParseResultImpl implements BodyParseResult {
   Map<String?, dynamic> query = {};
 
   @override
-  var error;
+  dynamic error;
 
   @override
   StackTrace? stack;

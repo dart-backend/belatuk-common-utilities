@@ -10,7 +10,7 @@ This package builds HTML AST's and renders them to HTML. It can be used as an in
 
 ## Requirements
 
-* Dart SDK: 2.12.x or later
+* Dart SDK: 2.17.x or later
 
 ## Installation
 
@@ -18,7 +18,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_html_builder: ^3.0.0
+  belatuk_html_builder: ^4.0.0
 ```
 
 ## Usage

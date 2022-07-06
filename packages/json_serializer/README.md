@@ -12,7 +12,7 @@ The ***new and improved*** definitive solution for JSON in Dart. It supports syn
 ## Installation
 
   dependencies:
-    belatuk_json_serializer: ^5.0.0
+    belatuk_json_serializer: ^6.0.0
 
 ## Usage
 

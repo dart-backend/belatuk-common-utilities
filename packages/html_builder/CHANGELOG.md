@@ -1,5 +1,10 @@
 # Change Log
 
+## 4.0.0
+
+* Require Dart >= 2.17
+* Added hashCode
+
 ## 3.0.2
 
 * Fixed license link

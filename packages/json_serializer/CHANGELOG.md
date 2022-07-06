@@ -1,5 +1,9 @@
 # Change Log
 
+## 6.0.0
+
+* Require Dart >= 2.17
+
 ## 5.0.0
 
 * Added `lints` linter

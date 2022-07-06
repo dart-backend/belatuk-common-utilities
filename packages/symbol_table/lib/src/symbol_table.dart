@@ -99,7 +99,7 @@ class SymbolTable<T> {
   }
 
   /// Use [allVariablesWithVisibility] instead.
-  @deprecated
+  @Deprecated("allVariablesWithVisibility")
   List<Variable<T>> allVariablesOfVisibility(Visibility visibility) {
     return allVariablesWithVisibility(visibility);
   }
@@ -145,7 +145,7 @@ class SymbolTable<T> {
   }
 
   /// Use [create] instead.
-  @deprecated
+  @Deprecated("create")
   Variable<T> add(String name, {T? value, bool? constant}) {
     return create(name, value: value, constant: constant);
   }
@@ -168,7 +168,7 @@ class SymbolTable<T> {
   }
 
   /// Use [assign] instead.
-  @deprecated
+  @Deprecated("assign")
   Variable<T> put(String name, T value) {
     return assign(name, value);
   }

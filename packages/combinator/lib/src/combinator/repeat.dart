@@ -25,7 +25,7 @@ class _Repeat<T> extends ListParser<T> {
       if (result.successful) {
         success++;
         if (result.value != null) {
-          results.add(result.value!);
+          results.add(result.value as T);
         }
         replay = args.scanner.position;
       } else if (backtrack) {

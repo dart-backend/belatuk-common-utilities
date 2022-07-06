@@ -62,7 +62,7 @@ class _Chain<T> extends ListParser<T> {
       }
 
       if (result.value != null) {
-        results.add(result.value!);
+        results.add(result.value as T);
       } else {
         results.add('NULL' as T);
       }

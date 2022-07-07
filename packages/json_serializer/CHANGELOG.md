@@ -1,5 +1,9 @@
 # Change Log
 
+## 6.0.1
+
+* Updated README
+
 ## 6.0.0
 
 * Require Dart >= 2.17

@@ -1,6 +1,6 @@
 # Belatuk JSON Serializer
 
-![Pub Version (including pre-releases)](https://img.shields.io/pub/v/json_serializer?include_prereleases)
+![Pub Version (including pre-releases)](https://img.shields.io/pub/v/belatuk_json_serializer?include_prereleases)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![Gitter](https://img.shields.io/gitter/room/angel_dart/discussion)](https://gitter.im/angel_dart/discussion)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/json_serializer/LICENSE)

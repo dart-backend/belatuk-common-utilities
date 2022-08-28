@@ -17,4 +17,7 @@ This repository contains the common utility packages required for developing dar
 * [Range Header](https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/range_header)
 * [Symbol Table](https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/symbol_table)
 * [User Agent](https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/user_agent)
-  
+
+## Donation & Support
+
+If you like this project and interested in supporting its development, you can make a donation via [paypal](https://paypal.me/dukefirehawk?country.x=MY&locale.x=en_US) service.

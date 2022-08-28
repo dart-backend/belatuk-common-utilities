@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:test/test.dart';
 
-const TOKEN =
+const token =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiIxMjcuMC4wLjEiLCJleHAiOi0xLCJpYXQiOiIyMDE2LTEyLTIyVDEyOjQ5OjUwLjM2MTQ0NiIsImlzcyI6ImFuZ2VsX2F1dGgiLCJzdWIiOiIxMDY2OTQ4Mzk2MDIwMjg5ODM2NTYifQ==.PYw7yUb-cFWD7N0sSLztP7eeRvO44nu1J2OgDNyT060=';
 
 String jsonEncodeBody(BodyParseResult result) {
@@ -89,12 +89,12 @@ void main() {
     });
 
     test('JWT', () async {
-      var postData = 'token=$TOKEN';
+      var postData = 'token=$token';
       print('Body: $postData');
       var response = await client!.get(Uri.parse('$url/?$postData'));
       print('Response: ${response.body}');
       var query = json.decode(response.body)['query'];
-      expect(query['token'], equals(TOKEN));
+      expect(query['token'], equals(token));
     });
   });
 
@@ -129,11 +129,11 @@ void main() {
     });
 
     test('JWT', () async {
-      var postData = 'token=$TOKEN';
+      var postData = 'token=$token';
       var response =
           await client!.post(Uri.parse(url!), headers: headers, body: postData);
       var body = json.decode(response.body)['body'];
-      expect(body['token'], equals(TOKEN));
+      expect(body['token'], equals(token));
     });
   });
 

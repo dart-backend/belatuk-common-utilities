@@ -63,10 +63,8 @@ world
     print('Response: ${response.body}');
     var jsons = json.decode(response.body);
     var files = jsons['files'].map((map) {
-      return map == null
-          ? null
-          : map.keys.fold<Map<String, dynamic>>(
-              <String, dynamic>{}, (out, k) => out..[k.toString()] = map[k]);
+      return map.keys.fold<Map<String, dynamic>>(
+          <String, dynamic>{}, (out, k) => out..[k.toString()] = map[k]);
     });
     expect(files.length, equals(0));
     expect(jsons['body']['hello'], equals('world'));

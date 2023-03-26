@@ -11,14 +11,14 @@ void printRecord(LogRecord rec) {
 class SampleNestedClass {
   String? bar;
 
-  SampleNestedClass([String? this.bar]);
+  SampleNestedClass([this.bar]);
 }
 
 class SampleClass {
   String? hello;
   List<SampleNestedClass> nested = [];
 
-  SampleClass([String? this.hello]);
+  SampleClass([this.hello]);
 }
 
 @WithSchemaUrl(
@@ -27,25 +27,23 @@ class BabelRc {
   List<String> presets;
   List<String> plugins;
 
-  BabelRc(
-      {List<String> this.presets: const [],
-      List<String> this.plugins: const []});
+  BabelRc({this.presets = const [], this.plugins = const []});
 }
 
-@WithSchema(const {
+@WithSchema({
   r"$schema": "http://json-schema.org/draft-04/schema#",
   "title": "Validated Sample Class",
   "description": "Sample schema for validation via JSON God",
   "type": "object",
-  "hello": const {"description": "A friendly greeting.", "type": "string"},
-  "nested": const {
+  "hello": {"description": "A friendly greeting.", "type": "string"},
+  "nested": {
     "description": "A list of NestedSampleClass items within this instance.",
     "type": "array",
-    "items": const {
+    "items": {
       "type": "object",
-      "bar": const {"description": "Filler text", "type": "string"}
+      "bar": {"description": "Filler text", "type": "string"}
     }
   },
-  "required": const ["hello", "nested"]
+  "required": ["hello", "nested"]
 })
 class ValidatedSampleClass {}

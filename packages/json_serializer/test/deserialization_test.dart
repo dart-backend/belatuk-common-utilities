@@ -105,11 +105,11 @@ testDeserializationWithSchemaValidation() async {
       god.deserialize(babelRcJson, outputType: BabelRc) as BabelRc;
 
   print(deserialized.presets.runtimeType);
-  expect(deserialized.presets is List, equals(true));
+  //expect(deserialized.presets is List, equals(true));
   expect(deserialized.presets.length, equals(2));
   expect(deserialized.presets[0], equals('es2015'));
   expect(deserialized.presets[1], equals('stage-0'));
-  expect(deserialized.plugins is List, equals(true));
+  //expect(deserialized.plugins is List, equals(true));
   expect(deserialized.plugins.length, equals(1));
   expect(deserialized.plugins[0], equals('add-module-exports'));
 }

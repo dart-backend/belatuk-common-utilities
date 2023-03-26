@@ -8,7 +8,7 @@ main() {
   test('fromJson', () {
     var foo = god.deserialize('{"bar":"baz"}', outputType: Foo) as Foo;
 
-    expect(foo is Foo, true);
+    //expect(foo is Foo, true);
     expect(foo.text, equals('baz'));
   });
 

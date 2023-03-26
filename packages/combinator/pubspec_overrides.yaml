@@ -1,0 +1,4 @@
+# melos_managed_dependency_overrides: belatuk_code_buffer
+dependency_overrides:
+  belatuk_code_buffer:
+    path: ../code_buffer

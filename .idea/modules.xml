@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/packages/body_parser/melos_belatuk_body_parser.iml" filepath="$PROJECT_DIR$/packages/body_parser/melos_belatuk_body_parser.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/code_buffer/melos_belatuk_code_buffer.iml" filepath="$PROJECT_DIR$/packages/code_buffer/melos_belatuk_code_buffer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/combinator/melos_belatuk_combinator.iml" filepath="$PROJECT_DIR$/packages/combinator/melos_belatuk_combinator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/html_builder/melos_belatuk_html_builder.iml" filepath="$PROJECT_DIR$/packages/html_builder/melos_belatuk_html_builder.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/json_serializer/melos_belatuk_json_serializer.iml" filepath="$PROJECT_DIR$/packages/json_serializer/melos_belatuk_json_serializer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/merge_map/melos_belatuk_merge_map.iml" filepath="$PROJECT_DIR$/packages/merge_map/melos_belatuk_merge_map.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/pretty_logging/melos_belatuk_pretty_logging.iml" filepath="$PROJECT_DIR$/packages/pretty_logging/melos_belatuk_pretty_logging.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/pub_sub/melos_belatuk_pub_sub.iml" filepath="$PROJECT_DIR$/packages/pub_sub/melos_belatuk_pub_sub.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/range_header/melos_belatuk_range_header.iml" filepath="$PROJECT_DIR$/packages/range_header/melos_belatuk_range_header.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/symbol_table/melos_belatuk_symbol_table.iml" filepath="$PROJECT_DIR$/packages/symbol_table/melos_belatuk_symbol_table.iml" />
+      <module fileurl="file://$PROJECT_DIR$/packages/user_agent/melos_user_agent_analyzer.iml" filepath="$PROJECT_DIR$/packages/user_agent/melos_user_agent_analyzer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/melos_belatuk_common_utilities.iml" filepath="$PROJECT_DIR$/melos_belatuk_common_utilities.iml" />
+    </modules>
+  </component>
+</project>

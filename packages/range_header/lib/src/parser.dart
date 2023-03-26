@@ -9,7 +9,7 @@ import 'range_header_item.dart';
 final RegExp _rgxInt = RegExp(r'[0-9]+');
 final RegExp _rgxWs = RegExp(r'[ \n\r\t]');
 
-enum TokenType { RANGE_UNIT, COMMA, INT, DASH, EQUALS }
+enum TokenType { rangeUnit, comma, int, dash, equals }
 
 class Token {
   final TokenType type;
@@ -27,19 +27,19 @@ List<Token> scan(String text, List<String> allowedRangeUnits) {
     scanner.scan(_rgxWs);
 
     if (scanner.scanChar($comma)) {
-      tokens.add(Token(TokenType.COMMA, scanner.lastSpan));
+      tokens.add(Token(TokenType.comma, scanner.lastSpan));
     } else if (scanner.scanChar($dash)) {
-      tokens.add(Token(TokenType.DASH, scanner.lastSpan));
+      tokens.add(Token(TokenType.dash, scanner.lastSpan));
     } else if (scanner.scan(_rgxInt)) {
-      tokens.add(Token(TokenType.INT, scanner.lastSpan));
+      tokens.add(Token(TokenType.int, scanner.lastSpan));
     } else if (scanner.scanChar($equal)) {
-      tokens.add(Token(TokenType.EQUALS, scanner.lastSpan));
+      tokens.add(Token(TokenType.equals, scanner.lastSpan));
     } else {
       var matched = false;
 
       for (var unit in allowedRangeUnits) {
         if (scanner.scan(unit)) {
-          tokens.add(Token(TokenType.RANGE_UNIT, scanner.lastSpan));
+          tokens.add(Token(TokenType.rangeUnit, scanner.lastSpan));
           matched = true;
           break;
         }
@@ -98,9 +98,9 @@ class Parser {
   }
 
   RangeHeader? parseRangeHeader() {
-    if (next(TokenType.RANGE_UNIT)) {
+    if (next(TokenType.rangeUnit)) {
       var unit = current!.span!.text;
-      next(TokenType.EQUALS); // Consume =, if any.
+      next(TokenType.equals); // Consume =, if any.
 
       var items = <RangeHeaderItem>[];
       var item = parseHeaderItem();
@@ -108,7 +108,7 @@ class Parser {
       while (item != null) {
         items.add(item);
         // Parse comma
-        if (next(TokenType.COMMA)) {
+        if (next(TokenType.comma)) {
           item = parseHeaderItem();
         } else {
           item = null;
@@ -126,11 +126,11 @@ class Parser {
   }
 
   RangeHeaderItem? parseHeaderItem() {
-    if (next(TokenType.INT)) {
+    if (next(TokenType.int)) {
       // i.e 500-544, or 600-
       var start = int.parse(current!.span!.text);
-      if (next(TokenType.DASH)) {
-        if (next(TokenType.INT)) {
+      if (next(TokenType.dash)) {
+        if (next(TokenType.int)) {
           return RangeHeaderItem(start, int.parse(current!.span!.text));
         } else {
           return RangeHeaderItem(start);
@@ -138,9 +138,9 @@ class Parser {
       } else {
         throw _expected('"-"');
       }
-    } else if (next(TokenType.DASH)) {
+    } else if (next(TokenType.dash)) {
       // i.e. -599
-      if (next(TokenType.INT)) {
+      if (next(TokenType.int)) {
         return RangeHeaderItem(-1, int.parse(current!.span!.text));
       } else {
         throw _expected('integer');

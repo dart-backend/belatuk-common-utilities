@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:io' show BytesBuilder;
+//import 'dart:io' hide BytesBuilder;
+import 'dart:typed_data';
+
 import 'dart:math';
 import 'package:async/async.dart';
 import 'package:charcode/ascii.dart';

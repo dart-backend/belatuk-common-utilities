@@ -1,8 +1,8 @@
 class RangeHeaderParseException extends FormatException {
-  @override
-  final String message;
+  //@override
+  //final String message;
 
-  RangeHeaderParseException(this.message);
+  RangeHeaderParseException(super.message);
 
   @override
   String toString() => 'Range header parse exception: $message';

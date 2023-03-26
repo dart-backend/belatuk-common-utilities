@@ -1,6 +1,5 @@
 import 'package:html/parser.dart' as html5;
 import 'package:belatuk_html_builder/elements.dart';
-import 'package:belatuk_html_builder/belatuk_html_builder.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -18,7 +18,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_html_builder: ^4.0.0
+  belatuk_html_builder: ^5.0.0
 ```
 
 ## Usage

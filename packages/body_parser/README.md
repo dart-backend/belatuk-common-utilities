@@ -30,7 +30,7 @@ A benefit of this is that primitive types are automatically deserialized correct
 To install Body Parser for your Dart project, simply add body_parser to your pub dependencies.
 
   dependencies:
-      belatuk_body_parser: ^4.0.0
+      belatuk_body_parser: ^5.0.0
 
 ### Usage
 

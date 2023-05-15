@@ -1,5 +1,14 @@
 # Change Log
 
+## 5.0.0
+
+* Require Dart >= 3.0
+  
+## 5.0.0-beta.1
+
+* Require Dart >= 3.0
+* Updated `belatuk_code_buffer` to 5.0.0
+
 ## 4.0.0
 
 * Require Dart >= 2.17

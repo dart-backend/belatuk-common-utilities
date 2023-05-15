@@ -12,8 +12,7 @@ and utilize basic memoization to speed up repeated lookups.
 
 ## Variables
 
-To represent a symbol, use `Variable`. I opted for the name
-`Variable` to avoid conflict with the Dart primitive `Symbol`.
+To represent a symbol, use `Variable`. I opted for the name `Variable` to avoid conflict with the Dart primitive `Symbol`.
 
 ```dart
 var foo =  Variable<String>('foo');

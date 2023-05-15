@@ -15,7 +15,9 @@ void handleRequest(HttpRequest request) async {
   // Get info
   header.items;
   header.rangeUnit;
-  header.items.forEach((item) => item.toContentRange(400));
+  for (var item in header.items) {
+    item.toContentRange(400);
+  }
 
   // Serve the file
   var transformer =

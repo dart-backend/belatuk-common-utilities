@@ -1,5 +1,13 @@
 # Change Log
 
+## 6.0.0
+
+* Require Dart >= 3.0
+
+## 6.0.0-beta.1
+
+* Require Dart >= 3.0
+
 ## 5.0.0
 
 * Require Dart >= 2.17

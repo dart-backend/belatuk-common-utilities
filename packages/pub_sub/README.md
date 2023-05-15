@@ -14,10 +14,10 @@ Add `belatuk_pub_sub` as a dependency in your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  belatuk_pub_sub: ^5.0.0
+  belatuk_pub_sub: ^6.0.0
 ```
 
-Then, be sure to run `pub get` in your terminal.
+Then, be sure to run `dart pub get` in your terminal.
 
 ## Usage
 

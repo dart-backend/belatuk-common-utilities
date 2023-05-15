@@ -12,9 +12,9 @@ Node Function(Node) rebuild(NodeBuilder Function(NodeBuilder) transform,
 ///
 /// Use this alongside [rebuild].
 Node Function(Node) rebuildRecursive(Node Function(Node) f) {
-  Node _build(Node node) {
-    return NodeBuilder.from(f(node)).mapChildren(_build).build();
+  Node build(Node node) {
+    return NodeBuilder.from(f(node)).mapChildren(build).build();
   }
 
-  return _build;
+  return build;
 }

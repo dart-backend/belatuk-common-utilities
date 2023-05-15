@@ -1,5 +1,13 @@
 # Change Log
 
+## 7.0.0
+
+* Require Dart >= 3.0
+
+## 7.0.0-beta.1
+
+* Require Dart >= 3.0
+
 ## 6.0.1
 
 * Updated README

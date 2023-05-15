@@ -10,7 +10,7 @@ This package builds HTML AST's and renders them to HTML. It can be used as an in
 
 ## Requirements
 
-* Dart SDK: 2.17.x or later
+* Dart SDK: 3.0.x or later
 
 ## Installation
 

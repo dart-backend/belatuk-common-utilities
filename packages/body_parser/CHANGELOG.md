@@ -1,5 +1,10 @@
 # Change Log
 
+## 5.1.0
+
+* Updated `belatuk_http_server` to 4.1.1
+* Updated `http` to 1.0.0
+
 ## 5.0.0
 
 * Require Dart >= 3.0

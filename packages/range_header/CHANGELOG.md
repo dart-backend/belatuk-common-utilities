@@ -1,8 +1,13 @@
 # Change Log
 
+## 6.1.0
+
+* Updated `file` to 7.0.0
+
 ## 6.0.0
 
 * Require Dart >= 3.0
+* Updated all dependencies to latest
 
 ## 6.0.0-beta.1
 

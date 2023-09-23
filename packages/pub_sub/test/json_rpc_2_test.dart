@@ -157,7 +157,7 @@ class _SocketStreamChannel extends StreamChannelMixin<List<int>> {
   Stream<List<int>> get stream => socket;
 }
 
-class _SocketSink extends StreamSink<List<int>> {
+class _SocketSink implements StreamSink<List<int>> {
   final Socket socket;
 
   _SocketSink(this.socket);

@@ -1,5 +1,9 @@
 # Change Log
 
+## 6.1.0
+
+* Upgraded `uuid` to 4.0.0
+
 ## 6.0.0
 
 * Require Dart >= 3.0

@@ -21,16 +21,14 @@ This is the request body parser powering the [Angel3 framework](https://pub.dev/
 
 ### About
 
-I needed something like Express.js's `body-parser` module, so I made it here. It fully supports JSON requests. x-www-form-urlencoded fully supported, as well as query strings. You can also include arrays in your query, in the same way you would for a PHP application. Full file upload support will also be present by the production 1.0.0 release.
-
-A benefit of this is that primitive types are automatically deserialized correctly. As in, if you have a `hello=1.5` request, then `body['hello']` will equal `1.5` and not `'1.5'`. A very semantic difference, yes, but it relieves stress in my head.
+This package is similar to Express.js's `body-parser` module. It fully supports JSON, x-www-form-urlencoded as well as query strings requests. You can also include arrays in your query, in the same way you would for a PHP application. A benefit of this is that primitive types are automatically deserialized correctly. As in, if you have a `hello=1.5` request, then `body['hello']` will equal `1.5` and not `'1.5'`.
 
 ### Installation
 
 To install Body Parser for your Dart project, simply add body_parser to your pub dependencies.
 
   dependencies:
-      belatuk_body_parser: ^5.1.0
+      belatuk_body_parser: ^8.0.0
 
 ### Usage
 

@@ -30,8 +30,7 @@ foo.value = 'baz'; // Also throws a StateError - Once a variable is locked, it c
 
 ## Visibility
 
-Variables are *public* by default, but can also be marked as *private* or *protected*. This can be helpful if you are trying
-to determine which symbols should be exported from a library or class.
+Variables are *public* by default, but can also be marked as *private* or *protected*. This can be helpful if you are trying to determine which symbols should be exported from a library or class.
 
 ```dart
 myVariable.visibility = Visibility.protected;

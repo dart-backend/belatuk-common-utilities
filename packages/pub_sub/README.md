@@ -14,7 +14,7 @@ Add `belatuk_pub_sub` as a dependency in your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  belatuk_pub_sub: ^6.0.0
+  belatuk_pub_sub: ^8.0.0
 ```
 
 Then, be sure to run `dart pub get` in your terminal.
@@ -22,17 +22,13 @@ Then, be sure to run `dart pub get` in your terminal.
 ## Usage
 
 `belatuk_pub_sub` is your typical pub/sub API. However, `belatuk_pub_sub` enforces authentication of every
-request. It is very possible that `belatuk_pub_sub` will run on both servers and in the browser,
-or on a platform belatuk_pub_sublike Flutter. Thus, there are provisions available to limit
-access.
+request. It is very possible that `belatuk_pub_sub` will run on both server and in the browser,
+or on a platform like Flutter.
 
 **Be careful to not leak any `belatuk_pub_sub` client ID's if operating over a network.**
-If you do, you risk malicious users injecting events into your application, which
-could ultimately spell *disaster*.
+If you do, you run the risk of malicious users injecting events into your application.
 
-A `belatuk_pub_sub` server can operate across multiple *adapters*, which take care of interfacing data over different
-media. For example, a single server can handle pub/sub between multiple Isolates and TCP Sockets, as well as
-WebSockets, simultaneously.
+A `belatuk_pub_sub` server can operate across multiple *adapters*, which take care of interfacing data over different media. For example, a single server can handle pub/sub between multiple Isolates and TCP Sockets, as well as WebSockets, simultaneously.
 
 ```dart
 import 'package:belatuk_pub_sub/belatuk_pub_sub.dart' as pub_sub;
@@ -52,13 +48,7 @@ main() async {
 
 ### Trusted Clients
 
-You can use `package:belatuk_pub_sub` without explicitly registering
-clients, *if and only if* those clients come from trusted sources.
-
-Clients via `Isolate` are always trusted.
-
-Clients via `package:json_rpc_2` must be explicitly marked
-as trusted (i.e. using an IP whitelist mechanism):
+You can use `package:belatuk_pub_sub` without explicitly registering clients, *if and only if* those clients come from trusted sources. Clients via `Isolate` are always trusted. Clients via `package:json_rpc_2` must be explicitly marked as trusted (i.e. using an IP whitelist mechanism):
 
 ```dart
 JsonRpc2Adapter(..., isTrusted: false);
@@ -71,8 +61,7 @@ pub_sub.IsolateClient(null);
 
 The ID's of all *untrusted* clients who will connect to the server must be known at start-up time.
 You may not register new clients after the server has started. This is mostly a security consideration;
-if it is impossible to register new clients, then malicious users cannot grant themselves additional
-privileges within the system.
+mainly to make it impossible to register new clients, thus preventing malicious users from granting themselves additional privileges within the system.
 
 ```dart
 import 'package:belatuk_pub_sub/belatuk_pub_sub.dart' as pub_sub;
@@ -96,10 +85,7 @@ void main() async {
 
 ### Isolates
 
-If you are just running multiple instances of a server,
-use `package:belatuk_pub_sub/isolate.dart`.
-
-You'll need one isolate to be the master. Typically this is the first isolate you create.
+If you are just running multiple instances of a server, use `package:belatuk_pub_sub/isolate.dart`. You'll need one isolate to be the master. Typically this is the first isolate you create.
 
 ```dart
 import 'dart:io';
@@ -157,9 +143,7 @@ Check out `test/json_rpc_2_test.dart` for an example of serving `belatuk_pub_sub
 
 ## Protocol
 
-`belatuk_pub_sub` is built upon a simple RPC, and this package includes
-an implementation that runs via `SendPort`s and `ReceivePort`s, as
-well as one that runs on any `StreamChannel<String>`.
+`belatuk_pub_sub` is built upon a simple RPC, and this package includes an implementation that runs via `SendPort`s and `ReceivePort`s, as well as one that runs on any `StreamChannel<String>`.
 
 Data sent over the wire looks like the following:
 
@@ -219,14 +203,11 @@ In the case of Isolate clients/servers, events will be simply sent as Lists:
 ['<event-name>', value]
 ```
 
-Clients can send the following (3) methods:
+Clients can send with the following 3 methods:
 
 * `subscribe` (`event_name`:string): Subscribe to an event.
 * `unsubscribe` (`subscription_id`:string): Unsubscribe from an event you previously subscribed to.
 * `publish` (`event_name`:string, `value`:any): Publish an event to all other clients who are subscribed.
 
-The client and server in `package:belatuk_pub_sub/isolate.dart` must make extra
-provisions to keep track of client ID's. Since `SendPort`s and `ReceivePort`s
-do not have any sort of guaranteed-unique ID's, new clients must send their
-`SendPort` to the server before sending any requests. The server then responds
+The client and server in `package:belatuk_pub_sub/isolate.dart` must make extra provisions to keep track of client ID's. Since `SendPort`s and `ReceivePort`s do not have any sort of guaranteed-unique ID's, new clients must send their `SendPort` to the server before sending any requests. The server then responds
 with an `id` that must be used to identify a `SendPort` to send a response to.

@@ -14,7 +14,7 @@ Add `belatuk_pub_sub` as a dependency in your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  belatuk_pub_sub: ^8.0.0
+  belatuk_pub_sub: ^8.2.0
 ```
 
 Then, be sure to run `dart pub get` in your terminal.
@@ -60,8 +60,7 @@ pub_sub.IsolateClient(null);
 ### Access Control
 
 The ID's of all *untrusted* clients who will connect to the server must be known at start-up time.
-You may not register new clients after the server has started. This is mostly a security consideration;
-mainly to make it impossible to register new clients, thus preventing malicious users from granting themselves additional privileges within the system.
+You may not register new clients after the server has started. This is mostly a security consideration, to make it impossible to register new clients, thus preventing malicious users from granting themselves additional privileges within the system.
 
 ```dart
 import 'package:belatuk_pub_sub/belatuk_pub_sub.dart' as pub_sub;

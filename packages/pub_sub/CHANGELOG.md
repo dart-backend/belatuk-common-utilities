@@ -1,5 +1,11 @@
 # Change Log
 
+## 6.2.0
+
+* Require Dart >= 3.2
+* Upgraded `lints` to 3.0.0
+* Refactored encode/decode message handling into `MessageHandler`
+
 ## 6.1.0
 
 * Upgraded `uuid` to 4.0.0

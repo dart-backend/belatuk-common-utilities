@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:isolate';
 import 'package:uuid/uuid.dart';
-import '../../belatuk_pub_sub.dart';
+import '../protocol/protocol.dart';
+import 'shared.dart';
 
 /// A [Adapter] implementation that communicates via [SendPort]s and [ReceivePort]s.
 class IsolateAdapter extends Adapter {
@@ -42,80 +43,49 @@ class IsolateAdapter extends Adapter {
       if (data is SendPort) {
         var id = _uuid.v4();
         _clients[id] = data;
-        data.send({'status': true, 'id': id});
-      } else if (data is Map &&
-          data['id'] is String &&
-          data['request_id'] is String &&
-          data['method'] is String &&
-          data['params'] is Map) {
-        var id = data['id'] as String?,
-            requestId = data['request_id'] as String?,
-            method = data['method'] as String?;
-        var params = data['params'] as Map?;
-        var sp = _clients[id!];
+        data.send(MessageHandler().encodeSendPortResponseMessage(id));
+      } else if (data is Map<String, Object?>) {
+        var (id, method, requestId, params) =
+            MessageHandler().decodeRequestMessage(data);
+        var (clientId, eventName, subscriptionId, value) =
+            MessageHandler().decodeRequestParams(params);
 
+        var sp = _clients[id];
         if (sp == null) {
-          // There's nobody to respond to, so don't send anything to anyone. Oops.
-        } else if (method == 'publish') {
-          if (_isValidClientId(params!['client_id']) &&
-              params['event_name'] is String &&
-              params.containsKey('value')) {
-            var clientId = params['client_id'] as String?,
-                eventName = params['event_name'] as String?;
-            var value = params['value'];
-            var rq = _IsolatePublishRequestImpl(
-                requestId, clientId, eventName, value, sp);
-            _onPublish.add(rq);
-          } else {
-            sp.send({
-              'status': false,
-              'request_id': requestId,
-              'error_message': 'Expected client_id, event_name, and value.'
-            });
+          // There's nobody to respond to, so don't send anything to anyone
+          return;
+        }
+
+        if (method == 'publish') {
+          if (eventName == null || value == null) {
+            sp.send(MessageHandler().encodePublishResponseError(requestId));
           }
+          var rq = _IsolatePublishRequestImpl(
+              requestId, clientId, eventName, value, sp);
+          _onPublish.add(rq);
         } else if (method == 'subscribe') {
-          if (_isValidClientId(params!['client_id']) &&
-              params['event_name'] is String) {
-            var clientId = params['client_id'] as String?,
-                eventName = params['event_name'] as String?;
-            var rq = _IsolateSubscriptionRequestImpl(
-                clientId, eventName, sp, requestId, _uuid);
-            _onSubscribe.add(rq);
-          } else {
-            sp.send({
-              'status': false,
-              'request_id': requestId,
-              'error_message': 'Expected client_id, and event_name.'
-            });
+          if (eventName == null) {
+            sp.send(
+                MessageHandler().encodeSubscriptionResponseError(requestId));
           }
+          var rq = _IsolateSubscriptionRequestImpl(
+              clientId, eventName, sp, requestId, _uuid);
+          _onSubscribe.add(rq);
         } else if (method == 'unsubscribe') {
-          if (_isValidClientId(params!['client_id']) &&
-              params['subscription_id'] is String) {
-            var clientId = params['client_id'] as String?,
-                subscriptionId = params['subscription_id'] as String?;
-            var rq = _IsolateUnsubscriptionRequestImpl(
-                clientId, subscriptionId, sp, requestId);
-            _onUnsubscribe.add(rq);
-          } else {
-            sp.send({
-              'status': false,
-              'request_id': requestId,
-              'error_message': 'Expected client_id, and subscription_id.'
-            });
+          if (subscriptionId == null) {
+            sp.send(
+                MessageHandler().encodeUnsubscriptionResponseError(requestId));
           }
+          var rq = _IsolateUnsubscriptionRequestImpl(
+              clientId, subscriptionId, sp, requestId);
+          _onUnsubscribe.add(rq);
         } else {
-          sp.send({
-            'status': false,
-            'request_id': requestId,
-            'error_message':
-                'Unrecognized method "$method". Or, you omitted id, request_id, method, or params.'
-          });
+          sp.send(MessageHandler()
+              .encodeUnknownMethodResponseError(requestId, method));
         }
       }
     });
   }
-
-  bool _isValidClientId(id) => id == null || id is String;
 
   @override
   bool isTrustedPublishRequest(PublishRequest request) {
@@ -138,7 +108,7 @@ class _IsolatePublishRequestImpl extends PublishRequest {
   final String? eventName;
 
   @override
-  final dynamic value;
+  final Object? value;
 
   final SendPort sendPort;
 
@@ -148,24 +118,15 @@ class _IsolatePublishRequestImpl extends PublishRequest {
       this.requestId, this.clientId, this.eventName, this.value, this.sendPort);
 
   @override
-  void accept(PublishResponse response) {
-    sendPort.send({
-      'status': true,
-      'request_id': requestId,
-      'result': {
-        'listeners': response.listeners,
-        'client_id': response.clientId
-      }
-    });
+  void reject(String errorMessage) {
+    sendPort.send(MessageHandler()
+        .encodePublishResponseError(requestId, errorMessage: errorMessage));
   }
 
   @override
-  void reject(String errorMessage) {
-    sendPort.send({
-      'status': false,
-      'request_id': requestId,
-      'error_message': errorMessage
-    });
+  void accept(PublishResponse response) {
+    sendPort.send(MessageHandler().encodePublishResponseMessage2(
+        requestId, response.listeners, response.clientId));
   }
 }
 
@@ -187,21 +148,15 @@ class _IsolateSubscriptionRequestImpl extends SubscriptionRequest {
 
   @override
   void reject(String errorMessage) {
-    sendPort.send({
-      'status': false,
-      'request_id': requestId,
-      'error_message': errorMessage
-    });
+    sendPort.send(MessageHandler().encodeSubscriptionResponseError(requestId,
+        errorMessage: errorMessage));
   }
 
   @override
   FutureOr<Subscription> accept(String? clientId) {
     var id = _uuid.v4();
-    sendPort.send({
-      'status': true,
-      'request_id': requestId,
-      'result': {'subscription_id': id, 'client_id': clientId}
-    });
+    sendPort.send(MessageHandler()
+        .encodeSubscriptionResponseMessage(requestId, id, clientId));
     return _IsolateSubscriptionImpl(clientId, id, eventName, sendPort);
   }
 }
@@ -239,15 +194,13 @@ class _IsolateUnsubscriptionRequestImpl extends UnsubscriptionRequest {
 
   @override
   void reject(String errorMessage) {
-    sendPort.send({
-      'status': false,
-      'request_id': requestId,
-      'error_message': errorMessage
-    });
+    sendPort.send(MessageHandler().encodeUnsubscriptionResponseError(requestId,
+        errorMessage: errorMessage));
   }
 
   @override
   void accept() {
-    sendPort.send({'status': true, 'request_id': requestId, 'result': {}});
+    sendPort
+        .send(MessageHandler().encodeUnsubscriptionResponseMessage(requestId));
   }
 }

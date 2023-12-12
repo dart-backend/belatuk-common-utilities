@@ -7,7 +7,7 @@ abstract class PublishRequest {
   String? get eventName;
 
   /// The value to be published as an event.
-  dynamic get value;
+  Object? get value;
 
   /// Accept the request, with a response.
   void accept(PublishResponse response);

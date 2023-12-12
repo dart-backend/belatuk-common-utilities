@@ -1,5 +1,5 @@
 name: belatuk_range_header
-version: 6.1.0
+version: 6.2.0
 description: Range header parser for Dart. Beyond parsing, a stream transformer is included.
 homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/range_header
 environment:

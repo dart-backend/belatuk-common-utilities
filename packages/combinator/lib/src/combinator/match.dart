@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 /// Expects to match a given [pattern]. If it is not matched, you can provide a custom [errorMessage].
 Parser<T> match<T>(Pattern pattern,

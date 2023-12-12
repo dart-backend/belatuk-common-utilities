@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 class _Cache<T> extends Parser<T> {
   final Map<int, ParseResult<T>> _cache = {};

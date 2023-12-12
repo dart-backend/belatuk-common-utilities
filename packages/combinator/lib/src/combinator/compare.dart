@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 class _Compare<T> extends ListParser<T> {
   final ListParser<T> parser;

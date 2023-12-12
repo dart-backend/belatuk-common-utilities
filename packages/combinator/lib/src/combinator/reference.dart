@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 Reference<T> reference<T>() => Reference<T>._();
 

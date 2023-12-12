@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 class _FoldErrors<T> extends Parser<T> {
   final Parser<T> parser;

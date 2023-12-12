@@ -9,8 +9,7 @@
 Packrat parser combinators that support static typing, generics, file spans, memoization, and more.
 
 **RECOMMENDED:**
-Check `example/` for examples.
-The examples contain examples of using:
+Check `example/` for examples. The examples contain examples of using:
 
 * Generic typing
 * Reading `FileSpan` from `ParseResult`

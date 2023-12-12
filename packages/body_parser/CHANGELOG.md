@@ -1,5 +1,9 @@
 # Change Log
 
+## 5.2.0
+
+* Updated `lints` to 3.0.0
+
 ## 5.1.0
 
 * Updated `belatuk_http_server` to 4.1.1

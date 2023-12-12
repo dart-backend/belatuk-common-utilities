@@ -1,4 +1,4 @@
-part of symbol_table;
+part of 'symbol_table.dart';
 
 /// Represents the visibility of a symbol.
 ///

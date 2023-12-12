@@ -1,4 +1,4 @@
-part of belatuk_json_serializer;
+part of '../belatuk_json_serializer.dart';
 
 /// Thrown when schema validation fails.
 class JsonValidationError implements Exception {

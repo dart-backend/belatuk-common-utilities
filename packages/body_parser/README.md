@@ -28,7 +28,7 @@ This package is similar to Express.js's `body-parser` module. It fully supports 
 To install Body Parser for your Dart project, simply add body_parser to your pub dependencies.
 
   dependencies:
-      belatuk_body_parser: ^8.0.0
+      belatuk_body_parser: ^5.2.0
 
 ### Usage
 

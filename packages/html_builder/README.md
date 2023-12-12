@@ -8,17 +8,13 @@
 
 This package builds HTML AST's and renders them to HTML. It can be used as an internal DSL, i.e. for a templating engine.
 
-## Requirements
-
-* Dart SDK: 3.0.x or later
-
 ## Installation
 
 In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_html_builder: ^8.0.0
+  belatuk_html_builder: ^5.1.0
 ```
 
 ## Usage

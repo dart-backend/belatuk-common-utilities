@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 /*
 /// Handles left recursion in a grammar using the Pratt algorithm.

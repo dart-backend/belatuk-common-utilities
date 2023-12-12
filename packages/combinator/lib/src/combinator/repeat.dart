@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 class _Repeat<T> extends ListParser<T> {
   final Parser<T> parser;

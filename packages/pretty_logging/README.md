@@ -15,7 +15,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_pretty_logging: ^6.0.0
+  belatuk_pretty_logging: ^6.1.0
 ```
 
 ## Usage

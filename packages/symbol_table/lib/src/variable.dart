@@ -1,4 +1,4 @@
-part of symbol_table;
+part of 'symbol_table.dart';
 
 /// Holds a symbol, the value of which may change or be marked immutable.
 class Variable<T> {

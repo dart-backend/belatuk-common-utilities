@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 class _Map<T, U> extends Parser<U> {
   final Parser<T> parser;

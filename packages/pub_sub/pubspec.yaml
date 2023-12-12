@@ -1,5 +1,5 @@
 name: belatuk_pub_sub
-version: 6.0.0
+version: 6.2.0
 description: Keep application instances in sync with a simple pub/sub API.
 homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/pub_sub
 environment:
@@ -7,8 +7,8 @@ environment:
 dependencies:
   json_rpc_2: ^3.0.0
   stream_channel: ^2.1.0
-  uuid: ^3.0.4
+  uuid: ^4.0.0
   collection: ^1.17.0
 dev_dependencies:
-  lints: ^2.0.0
   test: ^1.24.0
+  lints: ^3.0.0

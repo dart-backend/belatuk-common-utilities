@@ -14,7 +14,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_range_header: ^6.1.0
+  belatuk_range_header: ^6.2.0
 ```
 
 ## Usage

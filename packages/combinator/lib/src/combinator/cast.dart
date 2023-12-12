@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 class _Cast<T, U extends T> extends Parser<U> {
   final Parser<T> parser;

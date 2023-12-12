@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:isolate';
 import 'package:uuid/uuid.dart';
-import '../../belatuk_pub_sub.dart';
+
+import '../protocol/protocol.dart';
+import 'shared.dart';
 
 /// A [Client] implementation that communicates via [SendPort]s and [ReceivePort]s.
 class IsolateClient extends Client {
@@ -29,33 +31,39 @@ class IsolateClient extends Client {
   IsolateClient(String? clientId, this.serverSendPort) {
     _clientId = clientId;
     receivePort.listen((data) {
-      if (data is Map && data['request_id'] is String) {
-        var requestId = data['request_id'] as String?;
-        var c = _requests.remove(requestId);
+      if (data is Map<String, Object?>) {
+        var (status, id, requestId, result, errorMessage) =
+            MessageHandler().decodeResponseMessage(data);
 
-        if (c != null && !c.isCompleted) {
-          if (data['status'] is! bool) {
-            c.completeError(
-                FormatException('The server sent an invalid response.'));
-          } else if (!(data['status'] as bool)) {
-            c.completeError(PubSubException(data['error_message']?.toString() ??
-                'The server sent a failure response, but did not provide an error message.'));
-          } else if (data['result'] is! Map) {
-            c.completeError(FormatException(
-                'The server sent a success response, but did not include a result.'));
-          } else {
-            c.complete(data['result'] as Map?);
+        if (requestId != null) {
+          //var requestId = data['request_id'] as String?;
+          var c = _requests.remove(requestId);
+
+          if (c != null && !c.isCompleted) {
+            //if (data['status'] is! bool) {
+            //  c.completeError(
+            //      FormatException('The server sent an invalid response.'));
+            //} else if (!(data['status'] as bool)) {
+            if (!status) {
+              c.completeError(PubSubException(errorMessage ??
+                  'The server sent a failure response, but did not provide an error message.'));
+            } else if (result is! Map) {
+              c.completeError(FormatException(
+                  'The server sent a success response, but did not include a result.'));
+            } else {
+              c.complete(result);
+            }
           }
-        }
-      } else if (data is Map && data['id'] is String && _id == null) {
-        _id = data['id'] as String?;
+        } else if (id != null && _id == null) {
+          _id = id;
 
-        for (var c in _onConnect) {
-          if (!c.isCompleted) c.complete(_id);
-        }
+          for (var c in _onConnect) {
+            if (!c.isCompleted) c.complete(_id);
+          }
 
-        _onConnect.clear();
-      } else if (data is List && data.length == 2 && data[0] is String) {
+          _onConnect.clear();
+        }
+      } else if (data is List) {
         var eventName = data[0] as String;
         var event = data[1];
         for (var s in _subscriptions.where((s) => s.eventName == eventName)) {
@@ -82,18 +90,13 @@ class IsolateClient extends Client {
       var c = Completer<Map>();
       var requestId = _uuid.v4();
       _requests[requestId] = c;
-      serverSendPort.send({
-        'id': _id,
-        'request_id': requestId,
-        'method': 'publish',
-        'params': {
-          'client_id': clientId,
-          'event_name': eventName,
-          'value': value
-        }
-      });
+      serverSendPort.send(MessageHandler().encodePublishRequestMessage(
+          _id, requestId, clientId, eventName, value));
+
       return c.future.then((result) {
-        _clientId = result['client_id'] as String?;
+        var (_, clientId) = MessageHandler()
+            .decodePublishResponseMessage(result as Map<String, Object?>);
+        _clientId = clientId;
       });
     });
   }
@@ -104,16 +107,14 @@ class IsolateClient extends Client {
       var c = Completer<Map>();
       var requestId = _uuid.v4();
       _requests[requestId] = c;
-      serverSendPort.send({
-        'id': _id,
-        'request_id': requestId,
-        'method': 'subscribe',
-        'params': {'client_id': clientId, 'event_name': eventName}
-      });
+      serverSendPort.send(MessageHandler().encodeSubscriptionRequestMessage(
+          _id, requestId, clientId, eventName));
+
       return c.future.then<ClientSubscription>((result) {
-        _clientId = result['client_id'] as String?;
-        var s = _IsolateClientSubscription(
-            eventName, result['subscription_id'] as String?, this);
+        var (subcriptionId, clientId) = MessageHandler()
+            .decodeSubscriptionResponseMessage(result as Map<String, Object?>);
+        _clientId = clientId;
+        var s = _IsolateClientSubscription(eventName, subcriptionId, this);
         _subscriptions.add(s);
         return s;
       });
@@ -171,14 +172,11 @@ class _IsolateClientSubscription extends ClientSubscription {
       var c = Completer<Map>();
       var requestId = client._uuid.v4();
       client._requests[requestId] = c;
-      client.serverSendPort.send({
-        'id': client._id,
-        'request_id': requestId,
-        'method': 'unsubscribe',
-        'params': {'client_id': client.clientId, 'subscription_id': id}
-      });
+      client.serverSendPort.send(MessageHandler()
+          .encodeUnsubscriptionRequestMessage(
+              client._id, requestId, client.clientId, id));
 
-      return c.future.then((_) {
+      return c.future.then((result) {
         _close();
       });
     });

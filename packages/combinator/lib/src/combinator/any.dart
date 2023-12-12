@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 /// Matches any one of the given [parsers].
 ///

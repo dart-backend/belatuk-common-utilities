@@ -1,5 +1,5 @@
 name: belatuk_pretty_logging
-version: 6.0.0
+version: 6.1.0
 description: Standalone helper for colorful logging output, using pkg:io AnsiCode.
 homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/pretty_logging
 environment:
@@ -9,4 +9,4 @@ dependencies:
   logging: ^1.0.1
 dev_dependencies:
   test: ^1.24.0
-  lints: ^2.0.0
+  lints: ^3.0.0

@@ -1,4 +1,4 @@
-part of belatuk_json_serializer;
+part of '../belatuk_json_serializer.dart';
 
 /// Serializes any arbitrary Dart datum to JSON. Supports schema validation.
 String serialize(value) {

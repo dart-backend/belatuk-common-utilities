@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 /// Expects to parse a sequence of [parsers].
 ///

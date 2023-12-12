@@ -1,4 +1,4 @@
-part of lex.src.combinator;
+part of 'combinator.dart';
 
 /// A typed parser that parses a sequence of 2 values of different types.
 Parser<Tuple2<A, B>> tuple2<A, B>(Parser<A> a, Parser<B> b) {

@@ -1,4 +1,4 @@
-part of belatuk_json_serializer;
+part of '../belatuk_json_serializer.dart';
 
 /// Deserializes a JSON string into a Dart datum.
 ///

@@ -27,3 +27,4 @@ doc/api/
 !.vscode/launch.json
 !.vscode/extensions.json
 .metals/
+.DS_Store

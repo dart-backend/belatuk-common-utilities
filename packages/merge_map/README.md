@@ -7,8 +7,7 @@
 **Replacement of `package:merge_map` with breaking changes to support NNBD.**
 
 Combine multiple Maps into one. Equivalent to
-[Object.assign](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)
-in JS.
+[Object.assign](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign) in JS.
 
 ## Example
 

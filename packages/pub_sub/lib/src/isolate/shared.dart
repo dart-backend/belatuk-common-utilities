@@ -1,3 +1,5 @@
+/// A message handler class that handles the encoding/decoding of messages send
+/// between isolate [Client] and [Server].
 class MessageHandler {
   static const _requestId = 'request_id';
   static const _method = 'method';

@@ -1,8 +1,15 @@
 # Change Log
 
+## 5.3.0
+
+* Require Dart >= 3.3
+* Updated `belatuk_http_server` to 4.4.0
+* Upgraded `lints` to 4.0.0
+
 ## 5.2.0
 
 * Updated `lints` to 3.0.0
+* Updated `belatuk_http_server` to 4.2.0
 
 ## 5.1.0
 

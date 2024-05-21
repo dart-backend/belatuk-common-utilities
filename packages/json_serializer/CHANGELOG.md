@@ -2,8 +2,8 @@
 
 ## 7.2.0
 
-* Require Dart >= 3.0
-* Upgraded `lints` to 4.0.0
+* Require Dart >= 3.3
+* Updated `lints` to 4.0.0
 
 ## 7.1.0
 

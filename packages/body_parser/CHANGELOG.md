@@ -4,7 +4,7 @@
 
 * Require Dart >= 3.3
 * Updated `belatuk_http_server` to 4.4.0
-* Upgraded `lints` to 4.0.0
+* Updated `lints` to 4.0.0
 
 ## 5.2.0
 

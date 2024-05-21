@@ -54,7 +54,8 @@ class SelfClosingNode extends Node {
   @override
   List<Node> get children => List<Node>.unmodifiable([]);
 
-  SelfClosingNode(tagName, [Map<String, dynamic> attributes = const {}])
+  // ignore: use_super_parameters
+  SelfClosingNode(String tagName, [Map<String, dynamic> attributes = const {}])
       : super._selfClosing(tagName, attributes);
 }
 

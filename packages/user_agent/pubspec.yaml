@@ -1,9 +1,9 @@
 name: user_agent_analyzer
-version: 5.1.0
+version: 5.2.0
 description: A library to identify the type of devices and web browsers based on User-Agent string.
 homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/user_agent
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 dev_dependencies:
   test: ^1.24.0
-  lints: ^3.0.0
+  lints: ^4.0.0

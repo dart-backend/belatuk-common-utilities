@@ -1,5 +1,5 @@
 /// Exposes the [mergeMap] function, which... merges Maps.
-library angel3_merge_map;
+library;
 
 dynamic _copyValues<K, V>(
     Map<K, V> from, Map<K, V?> to, bool recursive, bool acceptNull) {

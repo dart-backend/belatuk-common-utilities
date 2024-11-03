@@ -1,5 +1,5 @@
 /// A robust library for JSON serialization and deserialization.
-library belatuk_json_serializer;
+library;
 
 //import 'package:dart2_constant/convert.dart';
 import 'dart:convert';

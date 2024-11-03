@@ -1,4 +1,4 @@
-library belatuk_json_serializer.reflection;
+library;
 
 import 'dart:mirrors';
 import '../belatuk_json_serializer.dart';

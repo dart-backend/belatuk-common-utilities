@@ -1,4 +1,4 @@
-library lex.src.combinator;
+library;
 
 import 'dart:collection';
 

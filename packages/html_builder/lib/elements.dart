@@ -1,5 +1,5 @@
 /// Helper functions to build common HTML5 elements.
-library belatuk_html_builder.elements;
+library;
 
 import 'belatuk_html_builder.dart';
 export 'belatuk_html_builder.dart';

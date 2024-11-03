@@ -1,4 +1,4 @@
-library symbol_table;
+library;
 
 import 'package:collection/collection.dart' show IterableExtension;
 part 'variable.dart';

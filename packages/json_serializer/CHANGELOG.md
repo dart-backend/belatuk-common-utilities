@@ -1,5 +1,10 @@
 # Change Log
 
+## 7.3.0
+
+* Require Dart >= 3.5
+* Updated `lints` to 5.0.0
+
 ## 7.2.0
 
 * Require Dart >= 3.3

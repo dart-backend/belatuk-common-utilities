@@ -3,7 +3,7 @@ version: 6.3.0
 description: Keep application instances in sync with a simple pub/sub API.
 homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/pub_sub
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: '>=3.5.0 <4.0.0'
 dependencies:
   json_rpc_2: ^3.0.0
   stream_channel: ^2.1.0
@@ -11,4 +11,4 @@ dependencies:
   collection: ^1.17.0
 dev_dependencies:
   test: ^1.24.0
-  lints: ^4.0.0
+  lints: ^5.0.0

@@ -21,7 +21,7 @@ The ***new and improved*** definitive solution for JSON in Dart. It supports syn
 It is recommended to import the library under an alias, i.e., `jsonSerializer`.
 
 ```dart
-import 'package:belatuk_json_serialization/belatuk_json_serialization.dart' as jsonSerializer;
+import 'package:belatuk_json_serializer/belatuk_json_serializer.dart' as jsonSerializer;
 ```
 
 ## Serializing JSON
@@ -90,7 +90,7 @@ class Parent {
 }
 
 main() {
-  Parent parent = jsonSerializer.deserialize('{"hello":"world","child":{"foo":"bar"}}', Parent);
+  Parent parent = jsonSerializer.deserialize('{"hello":"world","child":{"foo":"bar"}}', outputType: Parent);
   print(parent);
 }
 ```

@@ -42,8 +42,9 @@ class JsonRpc2Adapter extends Adapter {
   Future close() {
     if (_peer?.isClosed != true) _peer?.close();
 
-    Future.wait(_peers.where((s) => !s.isClosed).map((s) => s.close()))
-        .then((_) => _peers.clear());
+    Future.wait(
+      _peers.where((s) => !s.isClosed).map((s) => s.close()),
+    ).then((_) => _peers.clear());
     return Future.value();
   }
 
@@ -66,7 +67,12 @@ class JsonRpc2Adapter extends Adapter {
         var eventName = params['event_name'].asString;
         var value = params['value'].value;
         var rq = _JsonRpc2PublishRequestImpl(
-            requestId, clientId, eventName, value, peer);
+          requestId,
+          clientId,
+          eventName,
+          value,
+          peer,
+        );
         _onPublish.add(rq);
       });
 
@@ -75,7 +81,12 @@ class JsonRpc2Adapter extends Adapter {
         var clientId = _getClientId(params);
         var eventName = params['event_name'].asString;
         var rq = _JsonRpc2SubscriptionRequestImpl(
-            clientId, eventName, requestId, peer, _uuid);
+          clientId,
+          eventName,
+          requestId,
+          peer,
+          _uuid,
+        );
         _onSubscribe.add(rq);
       });
 
@@ -84,7 +95,11 @@ class JsonRpc2Adapter extends Adapter {
         var clientId = _getClientId(params);
         var subscriptionId = params['subscription_id'].asString;
         var rq = _JsonRpc2UnsubscriptionRequestImpl(
-            clientId, subscriptionId, peer, requestId);
+          clientId,
+          subscriptionId,
+          peer,
+          requestId,
+        );
         _onUnsubscribe.add(rq);
       });
 
@@ -115,7 +130,12 @@ class _JsonRpc2PublishRequestImpl extends PublishRequest {
   final json_rpc_2.Peer peer;
 
   _JsonRpc2PublishRequestImpl(
-      this.requestId, this.clientId, this.eventName, this.value, this.peer);
+    this.requestId,
+    this.clientId,
+    this.eventName,
+    this.value,
+    this.peer,
+  );
 
   @override
   void accept(PublishResponse response) {
@@ -124,8 +144,8 @@ class _JsonRpc2PublishRequestImpl extends PublishRequest {
       'request_id': requestId,
       'result': {
         'listeners': response.listeners,
-        'client_id': response.clientId
-      }
+        'client_id': response.clientId,
+      },
     });
   }
 
@@ -134,7 +154,7 @@ class _JsonRpc2PublishRequestImpl extends PublishRequest {
     peer.sendNotification(requestId, {
       'status': false,
       'request_id': requestId,
-      'error_message': errorMessage
+      'error_message': errorMessage,
     });
   }
 }
@@ -150,7 +170,12 @@ class _JsonRpc2SubscriptionRequestImpl extends SubscriptionRequest {
   final Uuid _uuid;
 
   _JsonRpc2SubscriptionRequestImpl(
-      this.clientId, this.eventName, this.requestId, this.peer, this._uuid);
+    this.clientId,
+    this.eventName,
+    this.requestId,
+    this.peer,
+    this._uuid,
+  );
 
   @override
   FutureOr<Subscription> accept(String? clientId) {
@@ -159,7 +184,7 @@ class _JsonRpc2SubscriptionRequestImpl extends SubscriptionRequest {
       'status': true,
       'request_id': requestId,
       'subscription_id': id,
-      'client_id': clientId
+      'client_id': clientId,
     });
     return _JsonRpc2SubscriptionImpl(clientId, id, eventName, peer);
   }
@@ -169,7 +194,7 @@ class _JsonRpc2SubscriptionRequestImpl extends SubscriptionRequest {
     peer.sendNotification(requestId, {
       'status': false,
       'request_id': requestId,
-      'error_message': errorMessage
+      'error_message': errorMessage,
     });
   }
 }
@@ -202,7 +227,11 @@ class _JsonRpc2UnsubscriptionRequestImpl extends UnsubscriptionRequest {
   final String requestId;
 
   _JsonRpc2UnsubscriptionRequestImpl(
-      this.clientId, this.subscriptionId, this.peer, this.requestId);
+    this.clientId,
+    this.subscriptionId,
+    this.peer,
+    this.requestId,
+  );
 
   @override
   void accept() {
@@ -214,7 +243,7 @@ class _JsonRpc2UnsubscriptionRequestImpl extends UnsubscriptionRequest {
     peer.sendNotification(requestId, {
       'status': false,
       'request_id': requestId,
-      'error_message': errorMessage
+      'error_message': errorMessage,
     });
   }
 }

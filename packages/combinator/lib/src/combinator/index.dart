@@ -20,9 +20,9 @@ class _Index<T> extends Parser<T> {
         value = vList.last;
       } else {
         if (index < vList.length) {
-//          print(">>>>Index: $index, Size: ${vList.length}");
-//        value =
-//            index == -1 ? result.value!.last : result.value!.elementAt(index);
+          //          print(">>>>Index: $index, Size: ${vList.length}");
+          //        value =
+          //            index == -1 ? result.value!.last : result.value!.elementAt(index);
           value = result.value!.elementAt(index);
         }
       }

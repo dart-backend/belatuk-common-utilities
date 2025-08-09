@@ -2,7 +2,7 @@ import 'package:belatuk_json_serializer/belatuk_json_serializer.dart' as god;
 import 'package:test/test.dart';
 import 'shared.dart';
 
-main() {
+void main() {
   god.logger.onRecord.listen(printRecord);
 
   group('deserialization', () {
@@ -10,18 +10,24 @@ main() {
 
     test('deserialize maps', testDeserializationOfMaps);
 
-    test('deserialize maps + reflection',
-        testDeserializationOfMapsWithReflection);
+    test(
+      'deserialize maps + reflection',
+      testDeserializationOfMapsWithReflection,
+    );
 
-    test('deserialize lists + reflection',
-        testDeserializationOfListsAsWellAsViaReflection);
+    test(
+      'deserialize lists + reflection',
+      testDeserializationOfListsAsWellAsViaReflection,
+    );
 
-    test('deserialize with schema validation',
-        testDeserializationWithSchemaValidation);
+    test(
+      'deserialize with schema validation',
+      testDeserializationWithSchemaValidation,
+    );
   });
 }
 
-testDeserializationOfPrimitives() {
+void testDeserializationOfPrimitives() {
   expect(god.deserialize('1'), equals(1));
   expect(god.deserialize('1.4'), equals(1.4));
   expect(god.deserialize('"Hi!"'), equals("Hi!"));
@@ -29,7 +35,7 @@ testDeserializationOfPrimitives() {
   expect(god.deserialize("null"), equals(null));
 }
 
-testDeserializationOfMaps() {
+void testDeserializationOfMaps() {
   String simpleJson =
       '{"hello":"world", "one": 1, "class": {"hello": "world"}}';
   String nestedJson =
@@ -51,7 +57,7 @@ class Pokedex {
   Map<String, int>? pokemon;
 }
 
-testDeserializationOfMapsWithReflection() {
+void testDeserializationOfMapsWithReflection() {
   var s = '{"pokemon": {"Bulbasaur": 1, "Deoxys": 382}}';
   var pokedex = god.deserialize(s, outputType: Pokedex) as Pokedex;
   expect(pokedex.pokemon, hasLength(2));
@@ -59,7 +65,7 @@ testDeserializationOfMapsWithReflection() {
   expect(pokedex.pokemon!['Deoxys'], 382);
 }
 
-testDeserializationOfListsAsWellAsViaReflection() {
+void testDeserializationOfListsAsWellAsViaReflection() {
   String json = '''[
     {
       "hello": "world",
@@ -79,8 +85,9 @@ testDeserializationOfListsAsWellAsViaReflection() {
   ]
   ''';
 
-  var list = god.deserialize(json, outputType: (<SampleClass>[]).runtimeType)
-      as List<SampleClass>;
+  var list =
+      god.deserialize(json, outputType: (<SampleClass>[]).runtimeType)
+          as List<SampleClass>;
   SampleClass first = list[0];
   SampleClass second = list[1];
 
@@ -97,7 +104,7 @@ testDeserializationOfListsAsWellAsViaReflection() {
   expect(secondNested.bar, equals("fight"));
 }
 
-testDeserializationWithSchemaValidation() async {
+Future<void> testDeserializationWithSchemaValidation() async {
   String babelRcJson =
       '{"presets":["es2015","stage-0"],"plugins":["add-module-exports"]}';
 

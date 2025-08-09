@@ -9,12 +9,15 @@ abstract class RangeHeader {
   /// Returns an immutable list of the ranges that were parsed.
   UnmodifiableListView<RangeHeaderItem> get items;
 
-  const factory RangeHeader(Iterable<RangeHeaderItem> items,
-      {String? rangeUnit}) = _ConstantRangeHeader;
+  const factory RangeHeader(
+    Iterable<RangeHeaderItem> items, {
+    String? rangeUnit,
+  }) = _ConstantRangeHeader;
 
   /// Eliminates any overlapping [items], sorts them, and folds them all into the most efficient representation possible.
   static UnmodifiableListView<RangeHeaderItem> foldItems(
-      Iterable<RangeHeaderItem> items) {
+    Iterable<RangeHeaderItem> items,
+  ) {
     var out = <RangeHeaderItem>{};
 
     for (var item in items) {
@@ -39,8 +42,11 @@ abstract class RangeHeader {
   /// If [fold] is `true`, the items will be folded into the most compact
   /// possible representation.
   ///
-  factory RangeHeader.parse(String text,
-      {Iterable<String>? allowedRangeUnits, bool fold = true}) {
+  factory RangeHeader.parse(
+    String text, {
+    Iterable<String>? allowedRangeUnits,
+    bool fold = true,
+  }) {
     var tokens = scan(text, allowedRangeUnits?.toList() ?? ['bytes']);
     var parser = Parser(tokens);
     var header = parser.parseRangeHeader();

@@ -5,7 +5,7 @@ import 'package:belatuk_json_serializer/belatuk_json_serializer.dart' as god;
 import 'package:test/test.dart';
 import 'shared.dart';
 
-main() {
+void main() {
   god.logger.onRecord.listen(printRecord);
 
   group('serialization', () {
@@ -19,12 +19,14 @@ main() {
 
     test('serialize via reflection', testSerializationViaReflection);
 
-    test('serialize with schema validation',
-        testSerializationWithSchemaValidation);
+    test(
+      'serialize with schema validation',
+      testSerializationWithSchemaValidation,
+    );
   });
 }
 
-testSerializationOfPrimitives() {
+void testSerializationOfPrimitives() {
   expect(god.serialize(1), equals("1"));
   expect(god.serialize(1.4), equals("1.4"));
   expect(god.serialize("Hi!"), equals('"Hi!"'));
@@ -32,7 +34,7 @@ testSerializationOfPrimitives() {
   expect(god.serialize(null), equals("null"));
 }
 
-testSerializationOfDates() {
+void testSerializationOfDates() {
   DateTime date = DateTime.now();
   String s = god.serialize({'date': date});
 
@@ -42,15 +44,18 @@ testSerializationOfDates() {
   expect(deserialized['date'], equals(date.toIso8601String()));
 }
 
-testSerializationOfMaps() {
-  var simple = json.decode(god
-      .serialize({'hello': 'world', 'one': 1, 'class': SampleClass('world')}));
-  var nested = json.decode(god.serialize({
-    'foo': {
-      'bar': 'baz',
-      'funny': {'how': 'life', 'seems': 2, 'hate': 'us sometimes'}
-    }
-  }));
+void testSerializationOfMaps() {
+  var simple = json.decode(
+    god.serialize({'hello': 'world', 'one': 1, 'class': SampleClass('world')}),
+  );
+  var nested = json.decode(
+    god.serialize({
+      'foo': {
+        'bar': 'baz',
+        'funny': {'how': 'life', 'seems': 2, 'hate': 'us sometimes'},
+      },
+    }),
+  );
 
   expect(simple['hello'], equals('world'));
   expect(simple['one'], equals(1));
@@ -62,12 +67,12 @@ testSerializationOfMaps() {
   expect(nested['foo']['funny']['hate'], equals('us sometimes'));
 }
 
-testSerializationOfLists() {
+void testSerializationOfLists() {
   List pandorasBox = [
     1,
     "2",
     {"num": 3, "four": SampleClass('five')},
-    SampleClass('six')..nested.add(SampleNestedClass('seven'))
+    SampleClass('six')..nested.add(SampleNestedClass('seven')),
   ];
   String s = god.serialize(pandorasBox);
   print(s);
@@ -90,7 +95,7 @@ testSerializationOfLists() {
   expect(deserialized[3]['nested'][0]['bar'], equals('seven'));
 }
 
-testSerializationViaReflection() {
+void testSerializationViaReflection() {
   SampleClass sample = SampleClass('world');
 
   for (int i = 0; i < 3; i++) {
@@ -109,9 +114,11 @@ testSerializationViaReflection() {
   expect(deserialized['nested'][2]['bar'], equals('baz'));
 }
 
-testSerializationWithSchemaValidation() async {
-  BabelRc babelRc =
-      BabelRc(presets: ['es2015', 'stage-0'], plugins: ['add-module-exports']);
+void testSerializationWithSchemaValidation() async {
+  BabelRc babelRc = BabelRc(
+    presets: ['es2015', 'stage-0'],
+    plugins: ['add-module-exports'],
+  );
 
   String s = god.serialize(babelRc);
   print(s);

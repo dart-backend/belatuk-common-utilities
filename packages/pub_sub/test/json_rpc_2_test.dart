@@ -17,17 +17,26 @@ void main() {
     serverSocket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
 
     adapter = JsonRpc2Adapter(
-        serverSocket.map<StreamChannel<String>>(streamSocket),
-        isTrusted: true);
+      serverSocket.map<StreamChannel<String>>(streamSocket),
+      isTrusted: true,
+    );
 
-    var socket1 =
-        await Socket.connect(InternetAddress.loopbackIPv4, serverSocket.port);
-    var socket2 =
-        await Socket.connect(InternetAddress.loopbackIPv4, serverSocket.port);
-    var socket3 =
-        await Socket.connect(InternetAddress.loopbackIPv4, serverSocket.port);
-    var socket4 =
-        await Socket.connect(InternetAddress.loopbackIPv4, serverSocket.port);
+    var socket1 = await Socket.connect(
+      InternetAddress.loopbackIPv4,
+      serverSocket.port,
+    );
+    var socket2 = await Socket.connect(
+      InternetAddress.loopbackIPv4,
+      serverSocket.port,
+    );
+    var socket3 = await Socket.connect(
+      InternetAddress.loopbackIPv4,
+      serverSocket.port,
+    );
+    var socket4 = await Socket.connect(
+      InternetAddress.loopbackIPv4,
+      serverSocket.port,
+    );
 
     client1 = JsonRpc2Client('json_rpc_2_test::secret', streamSocket(socket1));
     client2 = JsonRpc2Client('json_rpc_2_test::secret2', streamSocket(socket2));
@@ -39,9 +48,11 @@ void main() {
       ..registerClient(const ClientInfo('json_rpc_2_test::secret2'))
       ..registerClient(const ClientInfo('json_rpc_2_test::secret3'))
       ..registerClient(
-          const ClientInfo('json_rpc_2_test::no_publish', canPublish: false))
-      ..registerClient(const ClientInfo('json_rpc_2_test::no_subscribe',
-          canSubscribe: false))
+        const ClientInfo('json_rpc_2_test::no_publish', canPublish: false),
+      )
+      ..registerClient(
+        const ClientInfo('json_rpc_2_test::no_subscribe', canSubscribe: false),
+      )
       ..start();
 
     var sub = await client3.subscribe('foo');
@@ -51,8 +62,12 @@ void main() {
   });
 
   tearDown(() {
-    Future.wait(
-        [server.close(), client1.close(), client2.close(), client3.close()]);
+    Future.wait([
+      server.close(),
+      client1.close(),
+      client2.close(),
+      client3.close(),
+    ]);
   });
 
   group('trusted', () {
@@ -81,8 +96,10 @@ void main() {
 
   test('subscribers are not sent their own events', () async {
     var sub = await client1.subscribe('foo');
-    await client1.publish('foo',
-        '<this should never be sent to client1, because client1 sent it.>');
+    await client1.publish(
+      'foo',
+      '<this should never be sent to client1, because client1 sent it.>',
+    );
     await sub.unsubscribe();
     expect(await sub.isEmpty, isTrue);
   });
@@ -99,9 +116,13 @@ void main() {
     test('reject unknown client id', () async {
       try {
         var sock = await Socket.connect(
-            InternetAddress.loopbackIPv4, serverSocket.port);
-        var client =
-            JsonRpc2Client('json_rpc_2_test::invalid', streamSocket(sock));
+          InternetAddress.loopbackIPv4,
+          serverSocket.port,
+        );
+        var client = JsonRpc2Client(
+          'json_rpc_2_test::invalid',
+          streamSocket(sock),
+        );
         await client.publish('foo', 'bar');
         throw 'Invalid client ID\'s should throw an error, but they do not.';
       } on PubSubException catch (e) {
@@ -112,9 +133,13 @@ void main() {
     test('reject unprivileged publish', () async {
       try {
         var sock = await Socket.connect(
-            InternetAddress.loopbackIPv4, serverSocket.port);
-        var client =
-            JsonRpc2Client('json_rpc_2_test::no_publish', streamSocket(sock));
+          InternetAddress.loopbackIPv4,
+          serverSocket.port,
+        );
+        var client = JsonRpc2Client(
+          'json_rpc_2_test::no_publish',
+          streamSocket(sock),
+        );
         await client.publish('foo', 'bar');
         throw 'Unprivileged publishes should throw an error, but they do not.';
       } on PubSubException catch (e) {
@@ -125,9 +150,13 @@ void main() {
     test('reject unprivileged subscribe', () async {
       try {
         var sock = await Socket.connect(
-            InternetAddress.loopbackIPv4, serverSocket.port);
-        var client =
-            JsonRpc2Client('json_rpc_2_test::no_subscribe', streamSocket(sock));
+          InternetAddress.loopbackIPv4,
+          serverSocket.port,
+        );
+        var client = JsonRpc2Client(
+          'json_rpc_2_test::no_subscribe',
+          streamSocket(sock),
+        );
         await client.subscribe('foo');
         throw 'Unprivileged subscribes should throw an error, but they do not.';
       } on PubSubException catch (e) {
@@ -139,9 +168,9 @@ void main() {
 
 StreamChannel<String> streamSocket(Socket socket) {
   var channel = _SocketStreamChannel(socket);
-  return channel
-      .cast<List<int>>()
-      .transform(StreamChannelTransformer.fromCodec(utf8));
+  return channel.cast<List<int>>().transform(
+    StreamChannelTransformer.fromCodec(utf8),
+  );
 }
 
 class _SocketStreamChannel extends StreamChannelMixin<List<int>> {

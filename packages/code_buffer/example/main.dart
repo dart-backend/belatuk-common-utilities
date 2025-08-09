@@ -16,8 +16,11 @@ void someOtherFunc() {
 
   // Custom options...
   // ignore: unused_local_variable
-  var customBuf =
-      CodeBuffer(newline: '\r\n', space: '\t', trailingNewline: true);
+  var customBuf = CodeBuffer(
+    newline: '\r\n',
+    space: '\t',
+    trailingNewline: true,
+  );
 
   // Without whitespace..
   // ignore: unused_local_variable

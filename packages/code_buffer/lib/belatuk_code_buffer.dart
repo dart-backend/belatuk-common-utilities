@@ -19,15 +19,20 @@ class CodeBuffer implements StringBuffer {
   int _indentationLevel = 0;
   int _length = 0;
 
-  CodeBuffer(
-      {this.space = '  ',
-      this.newline = '\n',
-      this.trailingNewline = false,
-      this.sourceUrl});
+  CodeBuffer({
+    this.space = '  ',
+    this.newline = '\n',
+    this.trailingNewline = false,
+    this.sourceUrl,
+  });
 
   /// Creates a [CodeBuffer] that does not emit additional whitespace.
-  factory CodeBuffer.noWhitespace({sourceUrl}) => CodeBuffer(
-      space: '', newline: '', trailingNewline: false, sourceUrl: sourceUrl);
+  factory CodeBuffer.noWhitespace({dynamic sourceUrl}) => CodeBuffer(
+    space: '',
+    newline: '',
+    trailingNewline: false,
+    sourceUrl: sourceUrl,
+  );
 
   /// The last line created within this buffer.
   CodeBufferLine? get lastLine => _lastLine;
@@ -76,7 +81,8 @@ class CodeBuffer implements StringBuffer {
       //   1. Find current length of other
       //   2. Add length of its newline
       //   3. Add indentation
-      var column = (other._indentationLevel + line.indentationLevel) *
+      var column =
+          (other._indentationLevel + line.indentationLevel) *
           other.space.length;
       var offset = other._length + other.newline.length + column;
 
@@ -95,18 +101,21 @@ class CodeBuffer implements StringBuffer {
         column: column + line._buf.length,
       );
 
-      var clone = CodeBufferLine._(
-          line.indentationLevel + other._indentationLevel, start)
-        .._end = end
-        .._buf.write(line._buf.toString());
+      var clone =
+          CodeBufferLine._(
+              line.indentationLevel + other._indentationLevel,
+              start,
+            )
+            .._end = end
+            .._buf.write(line._buf.toString());
 
       // Adjust lastSpan
       if (line._lastSpan != null) {
         var s = line._lastSpan!.start;
         var lastSpanColumn =
             ((line.indentationLevel + other._indentationLevel) *
-                    other.space.length) +
-                line.text.indexOf(line._lastSpan!.text);
+                other.space.length) +
+            line.text.indexOf(line._lastSpan!.text);
         clone._lastSpan = SourceSpan(
           SourceLocation(
             offset + s.offset,
@@ -154,8 +163,11 @@ class CodeBuffer implements StringBuffer {
       column: end.column + 1,
     );
     _length++;
-    _currentLine!._lastSpan =
-        SourceSpan(end, _currentLine!._end, String.fromCharCode(charCode));
+    _currentLine!._lastSpan = SourceSpan(
+      end,
+      _currentLine!._end,
+      String.fromCharCode(charCode),
+    );
   }
 
   @override

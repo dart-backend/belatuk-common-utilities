@@ -7,10 +7,12 @@ import 'package:io/ansi.dart';
 /// [LogRecord].
 ///
 /// You can also pass a custom [printFunction] or [logColorChooser].
-void prettyLog(LogRecord record,
-    {bool Function(LogRecord)? omitError,
-    void Function(String)? printFunction,
-    AnsiCode Function(Level)? logColorChooser}) {
+void prettyLog(
+  LogRecord record, {
+  bool Function(LogRecord)? omitError,
+  void Function(String)? printFunction,
+  AnsiCode Function(Level)? logColorChooser,
+}) {
   logColorChooser ??= chooseLogColor;
   omitError ??= (_) => false;
   printFunction ??= print;

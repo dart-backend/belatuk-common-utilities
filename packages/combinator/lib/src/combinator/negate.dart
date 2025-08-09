@@ -27,11 +27,7 @@ class _Negate<T> extends Parser<T> {
 
     if (errorMessage != null) {
       result = result.addErrors([
-        SyntaxError(
-          severity,
-          errorMessage,
-          result.span,
-        ),
+        SyntaxError(severity, errorMessage, result.span),
       ]);
     }
 

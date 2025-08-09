@@ -8,8 +8,15 @@ class _Repeat<T> extends ListParser<T> {
   final String tooMany;
   final SyntaxErrorSeverity severity;
 
-  _Repeat(this.parser, this.count, this.exact, this.tooFew, this.tooMany,
-      this.backtrack, this.severity);
+  _Repeat(
+    this.parser,
+    this.count,
+    this.exact,
+    this.tooFew,
+    this.tooMany,
+    this.backtrack,
+    this.severity,
+  );
 
   @override
   ParseResult<List<T>> __parse(ParseArgs args) {
@@ -40,26 +47,23 @@ class _Repeat<T> extends ListParser<T> {
     if (success < count) {
       errors.addAll(result.errors);
       errors.add(
-        SyntaxError(
-          severity,
-          tooFew,
-          result.span ?? args.scanner.emptySpan,
-        ),
+        SyntaxError(severity, tooFew, result.span ?? args.scanner.emptySpan),
       );
 
       if (backtrack) args.scanner.position = replay;
 
       return ParseResult<List<T>>(
-          args.trampoline, args.scanner, this, false, errors);
+        args.trampoline,
+        args.scanner,
+        this,
+        false,
+        errors,
+      );
     } else if (success > count && exact) {
       if (backtrack) args.scanner.position = replay;
 
       return ParseResult<List<T>>(args.trampoline, args.scanner, this, false, [
-        SyntaxError(
-          severity,
-          tooMany,
-          result.span ?? args.scanner.emptySpan,
-        ),
+        SyntaxError(severity, tooMany, result.span ?? args.scanner.emptySpan),
       ]);
     }
 

@@ -18,9 +18,9 @@ void main() {
   });
 
   test('check', () {
-    var parser = match<int>(RegExp(r'[A-Za-z]+'))
-        .value((r) => r.span!.length)
-        .check(greaterThan(3));
+    var parser = match<int>(
+      RegExp(r'[A-Za-z]+'),
+    ).value((r) => r.span!.length).check(greaterThan(3));
     expect(parser.parse(scan('helloworld')).successful, isTrue);
     expect(parser.parse(scan('yo')).successful, isFalse);
   });

@@ -13,15 +13,18 @@ import 'map_from_uri.dart';
 
 /// Forwards to [parseBodyFromStream].
 @Deprecated("parseBodyFromStream")
-Future<BodyParseResult> parseBody(HttpRequest request,
-    {bool storeOriginalBuffer = false}) {
+Future<BodyParseResult> parseBody(
+  HttpRequest request, {
+  bool storeOriginalBuffer = false,
+}) {
   return parseBodyFromStream(
-      request,
-      request.headers.contentType != null
-          ? MediaType.parse(request.headers.contentType.toString())
-          : null,
-      request.uri,
-      storeOriginalBuffer: storeOriginalBuffer);
+    request,
+    request.headers.contentType != null
+        ? MediaType.parse(request.headers.contentType.toString())
+        : null,
+    request.uri,
+    storeOriginalBuffer: storeOriginalBuffer,
+  );
 }
 
 /// Grabs data from an incoming request.
@@ -33,8 +36,11 @@ Future<BodyParseResult> parseBody(HttpRequest request,
 ///
 /// Use [storeOriginalBuffer] to add  the original request bytes to the result.
 Future<BodyParseResult> parseBodyFromStream(
-    Stream<Uint8List> data, MediaType? contentType, Uri requestUri,
-    {bool storeOriginalBuffer = false}) async {
+  Stream<Uint8List> data,
+  MediaType? contentType,
+  Uri requestUri, {
+  bool storeOriginalBuffer = false,
+}) async {
   var result = _BodyParseResultImpl();
 
   Future<Uint8List> getBytes() {
@@ -72,32 +78,39 @@ Future<BodyParseResult> parseBodyFromStream(
         var parts =
             MimeMultipartTransformer(contentType.parameters['boundary']!)
                 .bind(stream)
-                .map((part) =>
-                    HttpMultipartFormData.parse(part, defaultEncoding: utf8));
+                .map(
+                  (part) =>
+                      HttpMultipartFormData.parse(part, defaultEncoding: utf8),
+                );
 
         await for (HttpMultipartFormData part in parts) {
           if (part.isBinary ||
               part.contentDisposition.parameters.containsKey('filename')) {
             var builder = await part.fold(
-                BytesBuilder(copy: false),
-                (BytesBuilder b, d) =>
-                    b..add(d is! String ? (d as List<int>?)! : d.codeUnits));
+              BytesBuilder(copy: false),
+              (BytesBuilder b, d) =>
+                  b..add(d is! String ? (d as List<int>?)! : d.codeUnits),
+            );
             var upload = FileUploadInfo(
-                mimeType: part.contentType!.mimeType,
-                name: part.contentDisposition.parameters['name'],
-                filename:
-                    part.contentDisposition.parameters['filename'] ?? 'file',
-                data: builder.takeBytes());
+              mimeType: part.contentType!.mimeType,
+              name: part.contentDisposition.parameters['name'],
+              filename:
+                  part.contentDisposition.parameters['filename'] ?? 'file',
+              data: builder.takeBytes(),
+            );
             result.files.add(upload);
           } else if (part.isText) {
             var text = await part.join();
-            buildMapFromUri(result.body,
-                '${part.contentDisposition.parameters["name"]}=$text');
+            buildMapFromUri(
+              result.body,
+              '${part.contentDisposition.parameters["name"]}=$text',
+            );
           }
         }
       } else if (contentType.mimeType == 'application/json') {
         result.body.addAll(
-            _foldToStringDynamic(json.decode(await getBody()) as Map?)!);
+          _foldToStringDynamic(json.decode(await getBody()) as Map?)!,
+        );
       } else if (contentType.mimeType == 'application/x-www-form-urlencoded') {
         var body = await getBody();
         buildMapFromUri(result.body, body);
@@ -143,5 +156,7 @@ class _BodyParseResultImpl implements BodyParseResult {
 
 Map<String, dynamic>? _foldToStringDynamic(Map? map) {
   return map?.keys.fold<Map<String, dynamic>>(
-      <String, dynamic>{}, (out, k) => out..[k.toString()] = map[k]);
+    <String, dynamic>{},
+    (out, k) => out..[k.toString()] = map[k],
+  );
 }

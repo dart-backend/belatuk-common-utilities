@@ -6,23 +6,21 @@ Parser jsonGrammar() {
   var expr = reference();
 
   // Parse a number
-  var number = match<num>(RegExp(r'-?[0-9]+(\.[0-9]+)?'),
-          errorMessage: 'Expected a number.')
-      .value(
-    (r) => num.parse(r.span!.text),
-  );
+  var number = match<num>(
+    RegExp(r'-?[0-9]+(\.[0-9]+)?'),
+    errorMessage: 'Expected a number.',
+  ).value((r) => num.parse(r.span!.text));
 
   // Parse a string (no escapes supported, because lazy).
-  var string =
-      match(RegExp(r'"[^"]*"'), errorMessage: 'Expected a string.').value(
-    (r) => r.span!.text.substring(1, r.span!.text.length - 1),
-  );
+  var string = match(
+    RegExp(r'"[^"]*"'),
+    errorMessage: 'Expected a string.',
+  ).value((r) => r.span!.text.substring(1, r.span!.text.length - 1));
 
   // Parse an array
-  var array = expr
-      .space()
-      .separatedByComma()
-      .surroundedBySquareBrackets(defaultValue: []);
+  var array = expr.space().separatedByComma().surroundedBySquareBrackets(
+    defaultValue: [],
+  );
 
   // KV pair
   var keyValuePair = chain([
@@ -37,15 +35,12 @@ Parser jsonGrammar() {
       .castDynamic()
       .surroundedByCurlyBraces(defaultValue: {});
 
-  expr.parser = longest(
-    [
-      array,
-      number,
-      string,
-      object.error(),
-    ],
-    errorMessage: 'Expected an expression.',
-  ).space();
+  expr.parser = longest([
+    array,
+    number,
+    string,
+    object.error(),
+  ], errorMessage: 'Expected an expression.').space();
 
   return expr.foldErrors();
 }

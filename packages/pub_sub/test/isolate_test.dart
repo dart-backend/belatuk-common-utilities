@@ -11,12 +11,18 @@ void main() {
 
   setUp(() async {
     adapter = IsolateAdapter();
-    client1 =
-        IsolateClient('isolate_test::secret', adapter.receivePort.sendPort);
-    client2 =
-        IsolateClient('isolate_test::secret2', adapter.receivePort.sendPort);
-    client3 =
-        IsolateClient('isolate_test::secret3', adapter.receivePort.sendPort);
+    client1 = IsolateClient(
+      'isolate_test::secret',
+      adapter.receivePort.sendPort,
+    );
+    client2 = IsolateClient(
+      'isolate_test::secret2',
+      adapter.receivePort.sendPort,
+    );
+    client3 = IsolateClient(
+      'isolate_test::secret3',
+      adapter.receivePort.sendPort,
+    );
     trustedClient = IsolateClient(null, adapter.receivePort.sendPort);
 
     server = Server([adapter])
@@ -24,9 +30,11 @@ void main() {
       ..registerClient(const ClientInfo('isolate_test::secret2'))
       ..registerClient(const ClientInfo('isolate_test::secret3'))
       ..registerClient(
-          const ClientInfo('isolate_test::no_publish', canPublish: false))
+        const ClientInfo('isolate_test::no_publish', canPublish: false),
+      )
       ..registerClient(
-          const ClientInfo('isolate_test::no_subscribe', canSubscribe: false))
+        const ClientInfo('isolate_test::no_subscribe', canSubscribe: false),
+      )
       ..start();
 
     var sub = await client3.subscribe('foo');
@@ -41,7 +49,7 @@ void main() {
       client1.close(),
       client2.close(),
       client3.close(),
-      trustedClient.close()
+      trustedClient.close(),
     ]);
   });
 
@@ -71,8 +79,10 @@ void main() {
 
   test('subscribers are not sent their own events', () async {
     var sub = await client1.subscribe('foo');
-    await client1.publish('foo',
-        '<this should never be sent to client1, because client1 sent it.>');
+    await client1.publish(
+      'foo',
+      '<this should never be sent to client1, because client1 sent it.>',
+    );
     await sub.unsubscribe();
     expect(await sub.isEmpty, isTrue);
   });
@@ -89,7 +99,9 @@ void main() {
     test('reject unknown client id', () async {
       try {
         var client = IsolateClient(
-            'isolate_test::invalid', adapter.receivePort.sendPort);
+          'isolate_test::invalid',
+          adapter.receivePort.sendPort,
+        );
         await client.publish('foo', 'bar');
         throw 'Invalid client ID\'s should throw an error, but they do not.';
       } on PubSubException catch (e) {
@@ -100,7 +112,9 @@ void main() {
     test('reject unprivileged publish', () async {
       try {
         var client = IsolateClient(
-            'isolate_test::no_publish', adapter.receivePort.sendPort);
+          'isolate_test::no_publish',
+          adapter.receivePort.sendPort,
+        );
         await client.publish('foo', 'bar');
         throw 'Unprivileged publishes should throw an error, but they do not.';
       } on PubSubException catch (e) {
@@ -111,7 +125,9 @@ void main() {
     test('reject unprivileged subscribe', () async {
       try {
         var client = IsolateClient(
-            'isolate_test::no_subscribe', adapter.receivePort.sendPort);
+          'isolate_test::no_subscribe',
+          adapter.receivePort.sendPort,
+        );
         await client.subscribe('foo');
         throw 'Unprivileged subscribes should throw an error, but they do not.';
       } on PubSubException catch (e) {

@@ -41,10 +41,15 @@ class JsonRpc2Client extends Client {
 
         if (data['status'] is! bool) {
           c.completeError(
-              FormatException('The server sent an invalid response.'));
+            FormatException('The server sent an invalid response.'),
+          );
         } else if (!(data['status'] as bool)) {
-          c.completeError(PubSubException(data['error_message']?.toString() ??
-              'The server sent a failure response, but did not provide an error message.'));
+          c.completeError(
+            PubSubException(
+              data['error_message']?.toString() ??
+                  'The server sent a failure response, but did not provide an error message.',
+            ),
+          );
         } else {
           c.complete(data);
         }
@@ -63,7 +68,7 @@ class JsonRpc2Client extends Client {
       'request_id': requestId,
       'client_id': clientId,
       'event_name': eventName,
-      'value': value
+      'value': value,
     });
     return c.future.then((data) {
       _clientId = data['result']['client_id'] as String?;
@@ -78,12 +83,15 @@ class JsonRpc2Client extends Client {
     _peer!.sendNotification('subscribe', {
       'request_id': requestId,
       'client_id': clientId,
-      'event_name': eventName
+      'event_name': eventName,
     });
     return c.future.then<ClientSubscription>((result) {
       _clientId = result['client_id'] as String?;
       var s = _JsonRpc2ClientSubscription(
-          eventName, result['subscription_id'] as String?, this);
+        eventName,
+        result['subscription_id'] as String?,
+        this,
+      );
       _subscriptions.add(s);
       return s;
     });
@@ -95,8 +103,11 @@ class JsonRpc2Client extends Client {
 
     for (var c in _requests.values) {
       if (!c.isCompleted) {
-        c.completeError(StateError(
-            'The client was closed before the server responded to this request.'));
+        c.completeError(
+          StateError(
+            'The client was closed before the server responded to this request.',
+          ),
+        );
       }
     }
 
@@ -121,10 +132,18 @@ class _JsonRpc2ClientSubscription extends ClientSubscription {
   }
 
   @override
-  StreamSubscription listen(void Function(dynamic event)? onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return _stream.stream.listen(onData,
-        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+  StreamSubscription listen(
+    void Function(dynamic event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return _stream.stream.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
   }
 
   @override
@@ -135,7 +154,7 @@ class _JsonRpc2ClientSubscription extends ClientSubscription {
     client._peer!.sendNotification('unsubscribe', {
       'request_id': requestId,
       'client_id': client.clientId,
-      'subscription_id': id
+      'subscription_id': id,
     });
 
     return c.future.then((_) {

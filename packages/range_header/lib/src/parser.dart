@@ -48,7 +48,8 @@ List<Token> scan(String text, List<String> allowedRangeUnits) {
       if (!matched) {
         var ch = scanner.readChar();
         throw RangeHeaderParseException(
-            'Unexpected character: "${String.fromCharCode(ch)}"');
+          'Unexpected character: "${String.fromCharCode(ch)}"',
+        );
       }
     }
   }
@@ -78,10 +79,12 @@ class Parser {
 
     if (peek != null && peek.span != null) {
       return RangeHeaderParseException(
-          'Expected $type at offset $offset, found "${peek.span!.text}" instead. \nSource:\n${peek.span?.highlight() ?? peek.type}');
+        'Expected $type at offset $offset, found "${peek.span!.text}" instead. \nSource:\n${peek.span?.highlight() ?? peek.type}',
+      );
     } else {
       return RangeHeaderParseException(
-          'Expected $type at offset $offset, but the header string ended without one.\nSource:\n${current!.span?.highlight() ?? current!.type}');
+        'Expected $type at offset $offset, but the header string ended without one.\nSource:\n${current!.span?.highlight() ?? current!.type}',
+      );
     }
   }
 

@@ -15,9 +15,4 @@ class SyntaxError implements Exception {
   }
 }
 
-enum SyntaxErrorSeverity {
-  warning,
-  error,
-  info,
-  hint,
-}
+enum SyntaxErrorSeverity { warning, error, info, hint }

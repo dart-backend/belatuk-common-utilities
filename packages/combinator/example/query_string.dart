@@ -4,20 +4,15 @@ import 'dart:io';
 import 'package:belatuk_combinator/belatuk_combinator.dart';
 import 'package:string_scanner/string_scanner.dart';
 
-final Parser<String> key =
-    match<String>(RegExp(r'[^=&\n]+'), errorMessage: 'Missing k/v')
-        .value((r) => r.span!.text);
+final Parser<String> key = match<String>(
+  RegExp(r'[^=&\n]+'),
+  errorMessage: 'Missing k/v',
+).value((r) => r.span!.text);
 
 final Parser value = key.map((r) => Uri.decodeQueryComponent(r.value!));
 
-final Parser pair = chain([
-  key,
-  match('='),
-  value,
-]).map((r) {
-  return {
-    r.value![0]: r.value![2],
-  };
+final Parser pair = chain([key, match('='), value]).map((r) {
+  return {r.value![0]: r.value![2]};
 });
 
 final Parser pairs = pair

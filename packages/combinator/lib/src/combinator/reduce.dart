@@ -21,7 +21,8 @@ class _Reduce<T> extends Parser<T> {
     }
 
     result = result.change(
-        value: result.value?.isNotEmpty == true ? result.value : []);
+      value: result.value?.isNotEmpty == true ? result.value : [],
+    );
     return ParseResult<T>(
       args.trampoline,
       args.scanner,

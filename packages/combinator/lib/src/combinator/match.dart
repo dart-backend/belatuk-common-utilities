@@ -1,9 +1,11 @@
 part of 'combinator.dart';
 
 /// Expects to match a given [pattern]. If it is not matched, you can provide a custom [errorMessage].
-Parser<T> match<T>(Pattern pattern,
-        {String? errorMessage, SyntaxErrorSeverity? severity}) =>
-    _Match<T>(pattern, errorMessage, severity ?? SyntaxErrorSeverity.error);
+Parser<T> match<T>(
+  Pattern pattern, {
+  String? errorMessage,
+  SyntaxErrorSeverity? severity,
+}) => _Match<T>(pattern, errorMessage, severity ?? SyntaxErrorSeverity.error);
 
 class _Match<T> extends Parser<T> {
   final Pattern pattern;

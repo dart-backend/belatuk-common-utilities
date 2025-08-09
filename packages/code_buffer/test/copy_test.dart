@@ -22,13 +22,14 @@ void main() {
 
   test('sets correct text', () {
     expect(
-        a.toString(),
-        [
-          'outer block 1',
-          '  inner block 1',
-          '  inner block 2',
-          'outer block 2',
-        ].join('\n'));
+      a.toString(),
+      [
+        'outer block 1',
+        '  inner block 1',
+        '  inner block 2',
+        'outer block 2',
+      ].join('\n'),
+    );
   });
 
   test('sets lastLine+lastSpan', () {

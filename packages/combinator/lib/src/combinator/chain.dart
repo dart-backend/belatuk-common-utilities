@@ -3,10 +3,16 @@ part of 'combinator.dart';
 /// Expects to parse a sequence of [parsers].
 ///
 /// If [failFast] is `true` (default), then the first failure to parse will abort the parse.
-ListParser<T> chain<T>(Iterable<Parser<T>> parsers,
-    {bool failFast = true, SyntaxErrorSeverity? severity}) {
+ListParser<T> chain<T>(
+  Iterable<Parser<T>> parsers, {
+  bool failFast = true,
+  SyntaxErrorSeverity? severity,
+}) {
   return _Chain<T>(
-      parsers, failFast != false, severity ?? SyntaxErrorSeverity.error);
+    parsers,
+    failFast != false,
+    severity ?? SyntaxErrorSeverity.error,
+  );
 }
 
 class _Alt<T> extends Parser<T> {
@@ -23,7 +29,10 @@ class _Alt<T> extends Parser<T> {
         ? result
         : result.addErrors([
             SyntaxError(
-                severity, errorMessage, result.span ?? args.scanner.emptySpan),
+              severity,
+              errorMessage,
+              result.span ?? args.scanner.emptySpan,
+            ),
           ]);
   }
 
@@ -55,7 +64,12 @@ class _Chain<T> extends ListParser<T> {
 
         if (failFast) {
           return ParseResult(
-              args.trampoline, args.scanner, this, false, result.errors);
+            args.trampoline,
+            args.scanner,
+            this,
+            false,
+            result.errors,
+          );
         }
 
         successful = false;

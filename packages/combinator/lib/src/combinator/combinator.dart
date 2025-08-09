@@ -113,10 +113,16 @@ abstract class Parser<T> {
   /// Validates the parse result against a [Matcher].
   ///
   /// You can provide a custom [errorMessage].
-  Parser<T> check(Matcher matcher,
-          {String? errorMessage, SyntaxErrorSeverity? severity}) =>
-      _Check<T>(
-          this, matcher, errorMessage, severity ?? SyntaxErrorSeverity.error);
+  Parser<T> check(
+    Matcher matcher, {
+    String? errorMessage,
+    SyntaxErrorSeverity? severity,
+  }) => _Check<T>(
+    this,
+    matcher,
+    errorMessage,
+    severity ?? SyntaxErrorSeverity.error,
+  );
 
   /// Binds an [errorMessage] to a copy of this parser.
   Parser<T> error({String? errorMessage, SyntaxErrorSeverity? severity}) =>
@@ -141,10 +147,10 @@ abstract class Parser<T> {
   /// Ensures this pattern is not matched.
   ///
   /// You can provide an [errorMessage].
-  Parser<T> negate(
-          {String errorMessage = 'Negate error',
-          SyntaxErrorSeverity severity = SyntaxErrorSeverity.error}) =>
-      _Negate<T>(this, errorMessage, severity);
+  Parser<T> negate({
+    String errorMessage = 'Negate error',
+    SyntaxErrorSeverity severity = SyntaxErrorSeverity.error,
+  }) => _Negate<T>(this, errorMessage, severity);
 
   /// Caches the results of parse attempts at various locations within the source text.
   ///
@@ -155,16 +161,16 @@ abstract class Parser<T> {
 
   /// Consumes `this` and another parser, but only considers the result of `this` parser.
   Parser<T> and(Parser other) => then(other).change<T>((r) {
-        return ParseResult<T>(
-          r.trampoline,
-          r.scanner,
-          this,
-          r.successful,
-          r.errors,
-          span: r.span,
-          value: (r.value != null ? r.value![0] : r.value) as T?,
-        );
-      });
+    return ParseResult<T>(
+      r.trampoline,
+      r.scanner,
+      this,
+      r.successful,
+      r.errors,
+      span: r.span,
+      value: (r.value != null ? r.value![0] : r.value) as T?,
+    );
+  });
 
   Parser<T> operator |(Parser<T> other) => or(other);
 
@@ -177,12 +183,16 @@ abstract class Parser<T> {
   /// Safely escapes this parser when an error occurs.
   ///
   /// The generated parser only runs once; repeated uses always exit eagerly.
-  Parser<T> safe(
-          {bool backtrack = true,
-          String errorMessage = 'error',
-          SyntaxErrorSeverity? severity}) =>
-      _Safe<T>(
-          this, backtrack, errorMessage, severity ?? SyntaxErrorSeverity.error);
+  Parser<T> safe({
+    bool backtrack = true,
+    String errorMessage = 'error',
+    SyntaxErrorSeverity? severity,
+  }) => _Safe<T>(
+    this,
+    backtrack,
+    errorMessage,
+    severity ?? SyntaxErrorSeverity.error,
+  );
 
   Parser<List<T>> separatedByComma() =>
       separatedBy(match<List<T>>(',').space());
@@ -221,11 +231,7 @@ abstract class Parser<T> {
   /// If no [right] is provided, it expects to see the same pattern on both sides.
   /// Use this parse things like parenthesized expressions, arrays, etc.
   Parser<T> surroundedBy(Parser left, [Parser? right]) {
-    return chain([
-      left,
-      this,
-      right ?? left,
-    ]).index(1).castDynamic().cast<T>();
+    return chain([left, this, right ?? left]).index(1).castDynamic().cast<T>();
   }
 
   /// Parses `this`, either as-is or wrapped in parentheses.
@@ -260,14 +266,23 @@ abstract class Parser<T> {
   /// an infinite amount of occurrences after the specified [count].
   ///
   /// You can provide custom error messages for when there are [tooFew] or [tooMany] occurrences.
-  ListParser<T> times(int count,
-      {bool exact = true,
-      String tooFew = 'Too few',
-      String tooMany = 'Too many',
-      bool backtrack = true,
-      SyntaxErrorSeverity? severity}) {
-    return _Repeat<T>(this, count, exact, tooFew, tooMany, backtrack,
-        severity ?? SyntaxErrorSeverity.error);
+  ListParser<T> times(
+    int count, {
+    bool exact = true,
+    String tooFew = 'Too few',
+    String tooMany = 'Too many',
+    bool backtrack = true,
+    SyntaxErrorSeverity? severity,
+  }) {
+    return _Repeat<T>(
+      this,
+      count,
+      exact,
+      tooFew,
+      tooMany,
+      backtrack,
+      severity ?? SyntaxErrorSeverity.error,
+    );
   }
 
   /// Produces an optional copy of this parser.
@@ -366,15 +381,22 @@ class ParseResult<T> {
   final Trampoline trampoline;
 
   ParseResult(
-      this.trampoline, this.scanner, this.parser, this.successful, this.errors,
-      {this.span, this.value});
+    this.trampoline,
+    this.scanner,
+    this.parser,
+    this.successful,
+    this.errors, {
+    this.span,
+    this.value,
+  });
 
-  ParseResult<T> change(
-      {Parser<T>? parser,
-      bool? successful,
-      Iterable<SyntaxError> errors = const [],
-      FileSpan? span,
-      T? value}) {
+  ParseResult<T> change({
+    Parser<T>? parser,
+    bool? successful,
+    Iterable<SyntaxError> errors = const [],
+    FileSpan? span,
+    T? value,
+  }) {
     return ParseResult<T>(
       trampoline,
       scanner,
@@ -387,8 +409,6 @@ class ParseResult<T> {
   }
 
   ParseResult<T> addErrors(Iterable<SyntaxError> errors) {
-    return change(
-      errors: List<SyntaxError>.from(this.errors)..addAll(errors),
-    );
+    return change(errors: List<SyntaxError>.from(this.errors)..addAll(errors));
   }
 }

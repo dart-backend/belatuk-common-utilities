@@ -22,7 +22,8 @@ class SampleClass {
 }
 
 @WithSchemaUrl(
-    "http://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/babelrc.json")
+  "http://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/babelrc.json",
+)
 class BabelRc {
   List<String> presets;
   List<String> plugins;
@@ -41,9 +42,9 @@ class BabelRc {
     "type": "array",
     "items": {
       "type": "object",
-      "bar": {"description": "Filler text", "type": "string"}
-    }
+      "bar": {"description": "Filler text", "type": "string"},
+    },
   },
-  "required": ["hello", "nested"]
+  "required": ["hello", "nested"],
 })
 class ValidatedSampleClass {}

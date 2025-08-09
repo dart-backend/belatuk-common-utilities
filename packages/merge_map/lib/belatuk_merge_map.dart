@@ -2,7 +2,11 @@
 library;
 
 dynamic _copyValues<K, V>(
-    Map<K, V> from, Map<K, V?> to, bool recursive, bool acceptNull) {
+  Map<K, V> from,
+  Map<K, V?> to,
+  bool recursive,
+  bool acceptNull,
+) {
   for (var key in from.keys) {
     if (from[key] is Map<K, V> && recursive) {
       if (to[key] is! Map<K, V>) {
@@ -26,8 +30,11 @@ dynamic _copyValues<K, V>(
 /// `acceptNull` is set to `false` by default. If set to `false`,
 /// then if the value on a map is `null`, it will be ignored, and
 /// that `null` will not be copied.
-Map<K, V> mergeMap<K, V>(Iterable<Map<K, V>> maps,
-    {bool recursive = true, bool acceptNull = false}) {
+Map<K, V> mergeMap<K, V>(
+  Iterable<Map<K, V>> maps, {
+  bool recursive = true,
+  bool acceptNull = false,
+}) {
   var result = <K, V>{};
   for (var map in maps) {
     _copyValues(map, result, recursive, acceptNull);

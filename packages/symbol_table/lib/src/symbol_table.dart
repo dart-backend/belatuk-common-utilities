@@ -157,7 +157,8 @@ class SymbolTable<T> {
     // Check if it exists first.
     if (_variables.any((v) => v.name == name)) {
       throw StateError(
-          'A symbol named "$name" already exists within the current context.');
+        'A symbol named "$name" already exists within the current context.',
+      );
     }
 
     _wipeLookupCache(name);
@@ -287,13 +288,15 @@ class SymbolTable<T> {
       .._parent = _parent
       .._root = _root;
 
-    table._variables.addAll(_variables.map((Variable v) {
-      var variable = Variable<T>._(v.name, this, value: v.value as T?);
-      variable.visibility = v.visibility;
+    table._variables.addAll(
+      _variables.map((Variable v) {
+        var variable = Variable<T>._(v.name, this, value: v.value as T?);
+        variable.visibility = v.visibility;
 
-      if (v.isImmutable) variable.lock();
-      return variable;
-    }));
+        if (v.isImmutable) variable.lock();
+        return variable;
+      }),
+    );
 
     return table;
   }

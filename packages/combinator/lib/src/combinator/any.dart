@@ -6,10 +6,18 @@ part of 'combinator.dart';
 ///
 /// You can provide a custom [errorMessage]. You can set it to `false` to not
 /// generate any error at all.
-Parser<T> any<T>(Iterable<Parser<T>> parsers,
-    {bool backtrack = true, errorMessage, SyntaxErrorSeverity? severity}) {
-  return _Any(parsers, backtrack != false, errorMessage,
-      severity ?? SyntaxErrorSeverity.error);
+Parser<T> any<T>(
+  Iterable<Parser<T>> parsers, {
+  bool backtrack = true,
+  errorMessage,
+  SyntaxErrorSeverity? severity,
+}) {
+  return _Any(
+    parsers,
+    backtrack != false,
+    errorMessage,
+    severity ?? SyntaxErrorSeverity.error,
+  );
 }
 
 class _Any<T> extends Parser<T> {
@@ -22,8 +30,9 @@ class _Any<T> extends Parser<T> {
 
   @override
   ParseResult<T> _parse(ParseArgs args) {
-    var inactive = parsers
-        .where((p) => !args.trampoline.isActive(p, args.scanner.position));
+    var inactive = parsers.where(
+      (p) => !args.trampoline.isActive(p, args.scanner.position),
+    );
 
     if (inactive.isEmpty) {
       return ParseResult(args.trampoline, args.scanner, this, false, []);

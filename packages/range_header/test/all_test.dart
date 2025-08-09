@@ -1,11 +1,13 @@
 import 'package:belatuk_range_header/belatuk_range_header.dart';
 import 'package:test/test.dart';
 
-final Matcher throwsRangeParseException =
-    throwsA(const TypeMatcher<RangeHeaderParseException>());
+final Matcher throwsRangeParseException = throwsA(
+  const TypeMatcher<RangeHeaderParseException>(),
+);
 
-final Matcher throwsInvalidRangeHeaderException =
-    throwsA(const TypeMatcher<InvalidRangeHeaderException>());
+final Matcher throwsInvalidRangeHeaderException = throwsA(
+  const TypeMatcher<InvalidRangeHeaderException>(),
+);
 
 void main() {
   group('one item', () {

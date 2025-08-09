@@ -24,7 +24,7 @@ jobs:
       # - uses: dart-lang/setup-dart@v1
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: "3.5.4"
+          sdk: "3.8.3"
       - uses: bluefireteam/melos-action@v3 
         with:
           run-bootstrap: false

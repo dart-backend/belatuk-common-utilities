@@ -43,5 +43,5 @@ abstract class Subscription {
   String? get clientId;
 
   /// Alerts a client of an event.
-  void dispatch(event);
+  void dispatch(dynamic event);
 }

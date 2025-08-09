@@ -27,7 +27,7 @@ class CodeBuffer implements StringBuffer {
   });
 
   /// Creates a [CodeBuffer] that does not emit additional whitespace.
-  factory CodeBuffer.noWhitespace({sourceUrl}) => CodeBuffer(
+  factory CodeBuffer.noWhitespace({dynamic sourceUrl}) => CodeBuffer(
     space: '',
     newline: '',
     trailingNewline: false,

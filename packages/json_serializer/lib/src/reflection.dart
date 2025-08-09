@@ -27,7 +27,7 @@ List<Symbol> _findGetters(ClassMirror classMirror) {
   return result;
 }
 
-serialize(value, Serializer serializer) {
+dynamic serialize(dynamic value, Serializer serializer) {
   logger.info("Serializing this value via reflection: $value");
   Map result = {};
   InstanceMirror instanceMirror = reflect(value);
@@ -60,7 +60,7 @@ serialize(value, Serializer serializer) {
   return result;
 }
 
-deserialize(value, Type outputType, Deserializer deserializer) {
+dynamic deserialize(dynamic value, Type outputType, Deserializer deserializer) {
   logger.info("About to deserialize $value to a $outputType");
 
   try {
@@ -106,8 +106,8 @@ deserialize(value, Type outputType, Deserializer deserializer) {
 }
 
 /// Uses mirrors to deserialize an object.
-_deserializeFromJsonByReflection(
-  data,
+dynamic _deserializeFromJsonByReflection(
+  dynamic data,
   Deserializer deserializer,
   Type outputType,
 ) {

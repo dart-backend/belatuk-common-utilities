@@ -1,14 +1,14 @@
 part of '../belatuk_json_serializer.dart';
 
 /// Serializes any arbitrary Dart datum to JSON. Supports schema validation.
-String serialize(value) {
+String serialize(dynamic value) {
   var serialized = serializeObject(value);
   logger.info('Serialization result: $serialized');
   return json.encode(serialized);
 }
 
 /// Transforms any Dart datum into a value acceptable to json.encode.
-serializeObject(value) {
+dynamic serializeObject(dynamic value) {
   if (_isPrimitive(value)) {
     logger.info("Serializing primitive value: $value");
     return value;

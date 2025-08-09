@@ -118,8 +118,8 @@ Node area({
 );
 
 Node article({
-  className,
-  style,
+  String? className,
+  String? style,
   Map<String, dynamic> p = const {},
   Iterable<Node> c = const [],
 }) => h('article', _apply([p], {'class': className, 'style': style}), [...c]);

@@ -17,9 +17,12 @@ class RangeHeaderTransformer
   final String boundary, mimeType;
   final int totalLength;
 
-  RangeHeaderTransformer(this.header, this.mimeType, this.totalLength,
-      {String? boundary})
-      : boundary = boundary ?? _randomString() {
+  RangeHeaderTransformer(
+    this.header,
+    this.mimeType,
+    this.totalLength, {
+    String? boundary,
+  }) : boundary = boundary ?? _randomString() {
     if (header.items.isEmpty) {
       throw ArgumentError('`header` cannot be null or empty.');
     }
@@ -49,7 +52,8 @@ class RangeHeaderTransformer
       len += utf8.encode('Content-Type: $mimeType\r\n').length;
       len += utf8
           .encode(
-              'Content-Range: ${header.rangeUnit} ${item.toContentRange(totalLength)}/$totalLength\r\n\r\n')
+            'Content-Range: ${header.rangeUnit} ${item.toContentRange(totalLength)}/$totalLength\r\n\r\n',
+          )
           .length;
       len += 2; // CRLF
     }
@@ -104,7 +108,8 @@ class RangeHeaderTransformer
           // too many bytes.
           if (out.length < length && enqueued.isEmpty && !(await q.hasNext)) {
             throw StateError(
-                'The range denoted is bigger than the size of the input stream.');
+              'The range denoted is bigger than the size of the input stream.',
+            );
           }
         }
 
@@ -136,8 +141,11 @@ class RangeHeaderTransformer
         // Next, write the boundary and data.
         ctrl.add(utf8.encode('--$boundary\r\n'));
         ctrl.add(utf8.encode('Content-Type: $mimeType\r\n'));
-        ctrl.add(utf8.encode(
-            'Content-Range: ${header.rangeUnit} ${item.toContentRange(totalLength)}/$totalLength\r\n\r\n'));
+        ctrl.add(
+          utf8.encode(
+            'Content-Range: ${header.rangeUnit} ${item.toContentRange(totalLength)}/$totalLength\r\n\r\n',
+          ),
+        );
         ctrl.add(chunk.takeBytes());
         ctrl.add(const [$cr, $lf]);
 
@@ -158,10 +166,11 @@ class RangeHeaderTransformer
 }
 
 var _rnd = Random();
-String _randomString(
-    {int length = 32,
-    String validChars =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'}) {
+String _randomString({
+  int length = 32,
+  String validChars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+}) {
   var len = _rnd.nextInt((length - 10)) + 10;
   var buf = StringBuffer();
 

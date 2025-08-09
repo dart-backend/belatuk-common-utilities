@@ -31,7 +31,9 @@ void main() {
       ..visibility = Visibility.private;
     expect(scope.allVariables, contains(three));
     expect(
-        scope.allVariablesWithVisibility(Visibility.private), contains(three));
+      scope.allVariablesWithVisibility(Visibility.private),
+      contains(three),
+    );
     expect(scope.allPublicVariables, isNot(contains(three)));
   });
 
@@ -39,8 +41,10 @@ void main() {
     var three = scope.create('three', value: 3)
       ..visibility = Visibility.protected;
     expect(scope.allVariables, contains(three));
-    expect(scope.allVariablesWithVisibility(Visibility.protected),
-        contains(three));
+    expect(
+      scope.allVariablesWithVisibility(Visibility.protected),
+      contains(three),
+    );
     expect(scope.allPublicVariables, isNot(contains(three)));
   });
 
@@ -101,8 +105,10 @@ void main() {
   });
 
   test('visibility comparisons', () {
-    expect([Visibility.private, Visibility.protected],
-        everyElement(lessThan(Visibility.public)));
+    expect([
+      Visibility.private,
+      Visibility.protected,
+    ], everyElement(lessThan(Visibility.public)));
     expect(Visibility.private, lessThan(Visibility.protected));
     expect(Visibility.protected, greaterThan(Visibility.private));
     expect(Visibility.public, greaterThan(Visibility.private));

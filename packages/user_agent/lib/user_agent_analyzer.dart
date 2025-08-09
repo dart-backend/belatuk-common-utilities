@@ -100,7 +100,7 @@ class UserAgent {
     'winw',
     'winw',
     'xda ',
-    'xda-'
+    'xda-',
   ];
 
   static const List<String> knownMobileUserAgentKeywords = [
@@ -127,14 +127,14 @@ class UserAgent {
     'up.browser',
     'up.link',
     'wap',
-    'windows ce'
+    'windows ce',
   ];
 
   static const List<String> knownTabletUserAgentKeywords = [
     'ipad',
     'playbook',
     'hp-tablet',
-    'kindle'
+    'kindle',
   ];
 
   UserAgent(this.value) : _lowerValue = value.toLowerCase();

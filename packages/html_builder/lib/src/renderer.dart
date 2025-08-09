@@ -13,15 +13,18 @@ abstract class StringRenderer implements Renderer<String> {
   /// If [html5] is not `false` (default: `true`), then self-closing elements will be rendered with a slash before the last angle bracket, ex. `<br />`.
   /// If [pretty] is `true` (default), then [whitespace] (default: `'  '`) will be inserted between nodes.
   /// You can also provide a [doctype] (default: `html`).
-  factory StringRenderer(
-          {bool html5 = true,
-          bool pretty = true,
-          String doctype = 'html',
-          String whitespace = '  '}) =>
-      pretty == true
-          ? _PrettyStringRendererImpl(
-              html5: html5 != false, doctype: doctype, whitespace: whitespace)
-          : _StringRendererImpl(html5: html5 != false, doctype: doctype);
+  factory StringRenderer({
+    bool html5 = true,
+    bool pretty = true,
+    String doctype = 'html',
+    String whitespace = '  ',
+  }) => pretty == true
+      ? _PrettyStringRendererImpl(
+          html5: html5 != false,
+          doctype: doctype,
+          whitespace: whitespace,
+        )
+      : _StringRendererImpl(html5: html5 != false, doctype: doctype);
 }
 
 class _StringRendererImpl implements StringRenderer {

@@ -12,7 +12,8 @@ class _Compare<T> extends ListParser<T> {
     if (!result.successful) return result;
 
     result = result.change(
-        value: result.value?.isNotEmpty == true ? result.value : []);
+      value: result.value?.isNotEmpty == true ? result.value : [],
+    );
     result = result.change(value: List<T>.from(result.value!));
     return ParseResult<List<T>>(
       args.trampoline,

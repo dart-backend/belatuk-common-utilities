@@ -29,12 +29,13 @@ String jsonEncodeBody(BodyParseResult result) {
 
 Future<BodyParseResult> _parseBody(HttpRequest request) {
   return parseBodyFromStream(
-      request,
-      request.headers.contentType != null
-          ? MediaType.parse(request.headers.contentType.toString())
-          : null,
-      request.uri,
-      storeOriginalBuffer: true);
+    request,
+    request.headers.contentType != null
+        ? MediaType.parse(request.headers.contentType.toString())
+        : null,
+    request.uri,
+    storeOriginalBuffer: true,
+  );
 }
 
 void main() {
@@ -47,8 +48,9 @@ void main() {
     server!.listen((HttpRequest request) async {
       //Server will simply return a JSON representation of the parsed body
       request.response.write(
-          // ignore: deprecated_member_use
-          jsonEncodeBody(await _parseBody(request)));
+        // ignore: deprecated_member_use
+        jsonEncodeBody(await _parseBody(request)),
+      );
       await request.response.close();
     });
     url = 'http://localhost:${server!.port}';
@@ -100,12 +102,15 @@ void main() {
 
   group('urlencoded', () {
     var headers = <String, String>{
-      'content-type': 'application/x-www-form-urlencoded'
+      'content-type': 'application/x-www-form-urlencoded',
     };
     test('POST Simple', () async {
       print('Body: hello=world');
-      var response = await client!
-          .post(Uri.parse(url!), headers: headers, body: 'hello=world');
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: 'hello=world',
+      );
       print('Response: ${response.body}');
       var result = json.decode(response.body);
       expect(result['query'], equals({}));
@@ -118,8 +123,11 @@ void main() {
     test('Post Complex', () async {
       var postData =
           'hello=world&nums%5B%5D=1&nums%5B%5D=2.0&nums%5B%5D=${3 - 1}&map.foo.bar=baz';
-      var response =
-          await client!.post(Uri.parse(url!), headers: headers, body: postData);
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: postData,
+      );
       print('Response: ${response.body}');
       var body = json.decode(response.body)['body'];
       expect(body['hello'], equals('world'));
@@ -130,8 +138,11 @@ void main() {
 
     test('JWT', () async {
       var postData = 'token=$token';
-      var response =
-          await client!.post(Uri.parse(url!), headers: headers, body: postData);
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: postData,
+      );
       var body = json.decode(response.body)['body'];
       expect(body['token'], equals(token));
     });
@@ -142,8 +153,11 @@ void main() {
     test('Post Simple', () async {
       var postData = json.encode({'hello': 'world'});
       print('Body: $postData');
-      var response =
-          await client!.post(Uri.parse(url!), headers: headers, body: postData);
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: postData,
+      );
       print('Response: ${response.body}');
       var result = json.decode(response.body);
       expect(result['body'], equals({'hello': 'world'}));
@@ -157,12 +171,15 @@ void main() {
         'hello': 'world',
         'nums': [1, 2.0, 3 - 1],
         'map': {
-          'foo': {'bar': 'baz'}
-        }
+          'foo': {'bar': 'baz'},
+        },
       });
       print('Body: $postData');
-      var response =
-          await client!.post(Uri.parse(url!), headers: headers, body: postData);
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: postData,
+      );
       print('Response: ${response.body}');
       var body = json.decode(response.body)['body'];
       expect(body['hello'], equals('world'));

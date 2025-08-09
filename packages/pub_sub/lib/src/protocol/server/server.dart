@@ -27,7 +27,8 @@ class Server {
   void addAdapter(Adapter adapter) {
     if (_started) {
       throw StateError(
-          'You cannot add new adapters after the server has started listening.');
+        'You cannot add new adapters after the server has started listening.',
+      );
     } else {
       _adapters.add(adapter);
     }
@@ -37,7 +38,8 @@ class Server {
   void registerClient(ClientInfo client) {
     if (_started) {
       throw StateError(
-          'You cannot register new clients after the server has started listening.');
+        'You cannot register new clients after the server has started listening.',
+      );
     } else {
       _clients.add(client);
     }
@@ -65,7 +67,8 @@ class Server {
   void start() {
     if (_adapters.isEmpty) {
       throw StateError(
-          'Cannot start a SyncServer that has no adapters attached.');
+        'Cannot start a SyncServer that has no adapters attached.',
+      );
     } else if (_started) {
       throw StateError('A SyncServer may only be started once.');
     }
@@ -84,8 +87,9 @@ class Server {
 
         if (rq.clientId?.isNotEmpty == true ||
             adapter.isTrustedPublishRequest(rq)) {
-          clientId =
-              rq.clientId?.isNotEmpty == true ? rq.clientId : _newClientId();
+          clientId = rq.clientId?.isNotEmpty == true
+              ? rq.clientId
+              : _newClientId();
           client = _clients.firstWhereOrNull((c) => c.id == clientId);
         }
 
@@ -94,8 +98,10 @@ class Server {
         } else if (!client.canPublish) {
           rq.reject('You are not allowed to publish events.');
         } else {
-          var listeners = _subscriptions[rq.eventName]
-                  ?.where((s) => s.clientId != clientId) ??
+          var listeners =
+              _subscriptions[rq.eventName]?.where(
+                (s) => s.clientId != clientId,
+              ) ??
               [];
 
           if (listeners.isEmpty) {
@@ -117,8 +123,9 @@ class Server {
 
         if (rq.clientId?.isNotEmpty == true ||
             adapter.isTrustedSubscriptionRequest(rq)) {
-          clientId =
-              rq.clientId?.isNotEmpty == true ? rq.clientId : _newClientId();
+          clientId = rq.clientId?.isNotEmpty == true
+              ? rq.clientId
+              : _newClientId();
           client = _clients.firstWhereOrNull((c) => c.id == clientId);
         }
 

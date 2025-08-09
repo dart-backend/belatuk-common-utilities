@@ -8,9 +8,11 @@ class _Cache<T> extends Parser<T> {
 
   @override
   ParseResult<T> __parse(ParseArgs args) {
-    return _cache.putIfAbsent(args.scanner.position, () {
-      return parser._parse(args.increaseDepth());
-    }).change(parser: this);
+    return _cache
+        .putIfAbsent(args.scanner.position, () {
+          return parser._parse(args.increaseDepth());
+        })
+        .change(parser: this);
   }
 
   @override

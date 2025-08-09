@@ -2,8 +2,9 @@ import 'dart:io';
 import 'package:belatuk_combinator/belatuk_combinator.dart';
 import 'package:string_scanner/string_scanner.dart';
 
-final Parser<String> id =
-    match<String>(RegExp(r'[A-Za-z]+')).value((r) => r.span!.text);
+final Parser<String> id = match<String>(
+  RegExp(r'[A-Za-z]+'),
+).value((r) => r.span!.text);
 
 // We can use `separatedBy` to easily construct parser
 // that can be matched multiple times, separated by another

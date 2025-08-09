@@ -16,42 +16,80 @@ Parser<Tuple3<A, B, C>> tuple3<A, B, C>(Parser<A> a, Parser<B> b, Parser<C> c) {
 
 /// A typed parser that parses a sequence of 4 values of different types.
 Parser<Tuple4<A, B, C, D>> tuple4<A, B, C, D>(
-    Parser<A> a, Parser<B> b, Parser<C> c, Parser<D> d) {
+  Parser<A> a,
+  Parser<B> b,
+  Parser<C> c,
+  Parser<D> d,
+) {
   return chain([a, b, c, d]).map((r) {
     return Tuple4(
-        r.value?[0] as A, r.value?[1] as B, r.value?[2] as C, r.value?[3] as D);
+      r.value?[0] as A,
+      r.value?[1] as B,
+      r.value?[2] as C,
+      r.value?[3] as D,
+    );
   });
 }
 
 /// A typed parser that parses a sequence of 5 values of different types.
 Parser<Tuple5<A, B, C, D, E>> tuple5<A, B, C, D, E>(
-    Parser<A> a, Parser<B> b, Parser<C> c, Parser<D> d, Parser<E> e) {
+  Parser<A> a,
+  Parser<B> b,
+  Parser<C> c,
+  Parser<D> d,
+  Parser<E> e,
+) {
   return chain([a, b, c, d, e]).map((r) {
-    return Tuple5(r.value?[0] as A, r.value?[1] as B, r.value?[2] as C,
-        r.value?[3] as D, r.value?[4] as E);
+    return Tuple5(
+      r.value?[0] as A,
+      r.value?[1] as B,
+      r.value?[2] as C,
+      r.value?[3] as D,
+      r.value?[4] as E,
+    );
   });
 }
 
 /// A typed parser that parses a sequence of 6 values of different types.
-Parser<Tuple6<A, B, C, D, E, F>> tuple6<A, B, C, D, E, F>(Parser<A> a,
-    Parser<B> b, Parser<C> c, Parser<D> d, Parser<E> e, Parser<F> f) {
+Parser<Tuple6<A, B, C, D, E, F>> tuple6<A, B, C, D, E, F>(
+  Parser<A> a,
+  Parser<B> b,
+  Parser<C> c,
+  Parser<D> d,
+  Parser<E> e,
+  Parser<F> f,
+) {
   return chain([a, b, c, d, e, f]).map((r) {
-    return Tuple6(r.value?[0] as A, r.value?[1] as B, r.value?[2] as C,
-        r.value?[3] as D, r.value?[4] as E, r.value?[5] as F);
+    return Tuple6(
+      r.value?[0] as A,
+      r.value?[1] as B,
+      r.value?[2] as C,
+      r.value?[3] as D,
+      r.value?[4] as E,
+      r.value?[5] as F,
+    );
   });
 }
 
 /// A typed parser that parses a sequence of 7 values of different types.
 Parser<Tuple7<A, B, C, D, E, F, G>> tuple7<A, B, C, D, E, F, G>(
-    Parser<A> a,
-    Parser<B> b,
-    Parser<C> c,
-    Parser<D> d,
-    Parser<E> e,
-    Parser<F> f,
-    Parser<G> g) {
+  Parser<A> a,
+  Parser<B> b,
+  Parser<C> c,
+  Parser<D> d,
+  Parser<E> e,
+  Parser<F> f,
+  Parser<G> g,
+) {
   return chain([a, b, c, d, e, f, g]).map((r) {
-    return Tuple7(r.value?[0] as A, r.value?[1] as B, r.value?[2] as C,
-        r.value?[3] as D, r.value?[4] as E, r.value?[5] as F, r.value?[6] as G);
+    return Tuple7(
+      r.value?[0] as A,
+      r.value?[1] as B,
+      r.value?[2] as C,
+      r.value?[3] as D,
+      r.value?[4] as E,
+      r.value?[5] as F,
+      r.value?[6] as G,
+    );
   });
 }

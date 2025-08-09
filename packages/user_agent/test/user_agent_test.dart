@@ -7,11 +7,22 @@ import 'package:test/test.dart';
 void main() {
   test('chrome', () {
     var ua = UserAgent(
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.95 Safari/537.36');
-    expect([ua.isChrome, ua.isWebKit, ua.isSafari, ua.isDesktop, ua.isMacOS],
-        everyElement(isTrue));
-    expect([ua.isFirefox, ua.isIE, ua.isOpera, ua.isMobile, ua.isTablet],
-        everyElement(isFalse));
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.95 Safari/537.36',
+    );
+    expect([
+      ua.isChrome,
+      ua.isWebKit,
+      ua.isSafari,
+      ua.isDesktop,
+      ua.isMacOS,
+    ], everyElement(isTrue));
+    expect([
+      ua.isFirefox,
+      ua.isIE,
+      ua.isOpera,
+      ua.isMobile,
+      ua.isTablet,
+    ], everyElement(isFalse));
     expect([
       ua.isAndroid,
       ua.isAndroidPhone,
@@ -21,7 +32,7 @@ void main() {
       ua.isBlackberryTablet,
       ua.isWindows,
       ua.isWindowsPhone,
-      ua.isWindowsTablet
+      ua.isWindowsTablet,
     ], everyElement(isFalse));
 
     expect(ua.cssPrefix, equals('-webkit-'));

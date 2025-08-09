@@ -3,8 +3,11 @@ part of 'combinator.dart';
 /// Matches any one of the given [parsers].
 ///
 /// You can provide a custom [errorMessage].
-Parser<T> longest<T>(Iterable<Parser<T>> parsers,
-    {Object? errorMessage, SyntaxErrorSeverity? severity}) {
+Parser<T> longest<T>(
+  Iterable<Parser<T>> parsers, {
+  Object? errorMessage,
+  SyntaxErrorSeverity? severity,
+}) {
   return _Longest(parsers, errorMessage, severity ?? SyntaxErrorSeverity.error);
 }
 
@@ -17,9 +20,9 @@ class _Longest<T> extends Parser<T> {
 
   @override
   ParseResult<T> _parse(ParseArgs args) {
-    var inactive = parsers
-        .toList()
-        .where((p) => !args.trampoline.isActive(p, args.scanner.position));
+    var inactive = parsers.toList().where(
+      (p) => !args.trampoline.isActive(p, args.scanner.position),
+    );
 
     if (inactive.isEmpty) {
       return ParseResult(args.trampoline, args.scanner, this, false, []);

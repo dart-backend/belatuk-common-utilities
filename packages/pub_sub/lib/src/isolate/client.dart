@@ -32,8 +32,8 @@ class IsolateClient extends Client {
     _clientId = clientId;
     receivePort.listen((data) {
       if (data is Map<String, Object?>) {
-        var (status, id, requestId, result, errorMessage) =
-            MessageHandler().decodeResponseMessage(data);
+        var (status, id, requestId, result, errorMessage) = MessageHandler()
+            .decodeResponseMessage(data);
 
         if (requestId != null) {
           //var requestId = data['request_id'] as String?;
@@ -45,11 +45,18 @@ class IsolateClient extends Client {
             //      FormatException('The server sent an invalid response.'));
             //} else if (!(data['status'] as bool)) {
             if (!status) {
-              c.completeError(PubSubException(errorMessage ??
-                  'The server sent a failure response, but did not provide an error message.'));
+              c.completeError(
+                PubSubException(
+                  errorMessage ??
+                      'The server sent a failure response, but did not provide an error message.',
+                ),
+              );
             } else if (result is! Map) {
-              c.completeError(FormatException(
-                  'The server sent a success response, but did not include a result.'));
+              c.completeError(
+                FormatException(
+                  'The server sent a success response, but did not include a result.',
+                ),
+              );
             } else {
               c.complete(result);
             }
@@ -90,12 +97,20 @@ class IsolateClient extends Client {
       var c = Completer<Map>();
       var requestId = _uuid.v4();
       _requests[requestId] = c;
-      serverSendPort.send(MessageHandler().encodePublishRequestMessage(
-          _id, requestId, clientId, eventName, value));
+      serverSendPort.send(
+        MessageHandler().encodePublishRequestMessage(
+          _id,
+          requestId,
+          clientId,
+          eventName,
+          value,
+        ),
+      );
 
       return c.future.then((result) {
-        var (_, clientId) = MessageHandler()
-            .decodePublishResponseMessage(result as Map<String, Object?>);
+        var (_, clientId) = MessageHandler().decodePublishResponseMessage(
+          result as Map<String, Object?>,
+        );
         _clientId = clientId;
       });
     });
@@ -107,8 +122,14 @@ class IsolateClient extends Client {
       var c = Completer<Map>();
       var requestId = _uuid.v4();
       _requests[requestId] = c;
-      serverSendPort.send(MessageHandler().encodeSubscriptionRequestMessage(
-          _id, requestId, clientId, eventName));
+      serverSendPort.send(
+        MessageHandler().encodeSubscriptionRequestMessage(
+          _id,
+          requestId,
+          clientId,
+          eventName,
+        ),
+      );
 
       return c.future.then<ClientSubscription>((result) {
         var (subcriptionId, clientId) = MessageHandler()
@@ -127,15 +148,21 @@ class IsolateClient extends Client {
 
     for (var c in _onConnect) {
       if (!c.isCompleted) {
-        c.completeError(StateError(
-            'The client was closed before the server ever accepted the connection.'));
+        c.completeError(
+          StateError(
+            'The client was closed before the server ever accepted the connection.',
+          ),
+        );
       }
     }
 
     for (var c in _requests.values) {
       if (!c.isCompleted) {
-        c.completeError(StateError(
-            'The client was closed before the server responded to this request.'));
+        c.completeError(
+          StateError(
+            'The client was closed before the server responded to this request.',
+          ),
+        );
       }
     }
 
@@ -160,10 +187,18 @@ class _IsolateClientSubscription extends ClientSubscription {
   }
 
   @override
-  StreamSubscription listen(void Function(dynamic event)? onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return _stream.stream.listen(onData,
-        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+  StreamSubscription listen(
+    void Function(dynamic event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return _stream.stream.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
   }
 
   @override
@@ -172,9 +207,14 @@ class _IsolateClientSubscription extends ClientSubscription {
       var c = Completer<Map>();
       var requestId = client._uuid.v4();
       client._requests[requestId] = c;
-      client.serverSendPort.send(MessageHandler()
-          .encodeUnsubscriptionRequestMessage(
-              client._id, requestId, client.clientId, id));
+      client.serverSendPort.send(
+        MessageHandler().encodeUnsubscriptionRequestMessage(
+          client._id,
+          requestId,
+          client.clientId,
+          id,
+        ),
+      );
 
       return c.future.then((result) {
         _close();

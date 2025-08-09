@@ -17,7 +17,8 @@ void main() async {
   await Future.wait(futures).then((_) {
     print('All instances started.');
     print(
-        'Test with "wrk -t12 -c400 -d30s -s ./example/post.lua http://localhost:3000" or similar');
+      'Test with "wrk -t12 -c400 -d30s -s ./example/post.lua http://localhost:3000" or similar',
+    );
     start([address, port, 0]);
   });
 }
@@ -45,17 +46,21 @@ void start(List args) {
     });
 
     print(
-        'Server #$id listening at http://${server.address.address}:${server.port}');
+      'Server #$id listening at http://${server.address.address}:${server.port}',
+    );
   });
 }
 
-Future<BodyParseResult> defaultParseBody(HttpRequest request,
-    {bool storeOriginalBuffer = false}) {
+Future<BodyParseResult> defaultParseBody(
+  HttpRequest request, {
+  bool storeOriginalBuffer = false,
+}) {
   return parseBodyFromStream(
-      request,
-      request.headers.contentType != null
-          ? MediaType.parse(request.headers.contentType.toString())
-          : null,
-      request.uri,
-      storeOriginalBuffer: storeOriginalBuffer);
+    request,
+    request.headers.contentType != null
+        ? MediaType.parse(request.headers.contentType.toString())
+        : null,
+    request.uri,
+    storeOriginalBuffer: storeOriginalBuffer,
+  );
 }

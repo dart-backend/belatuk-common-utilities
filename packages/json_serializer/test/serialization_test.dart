@@ -19,8 +19,10 @@ main() {
 
     test('serialize via reflection', testSerializationViaReflection);
 
-    test('serialize with schema validation',
-        testSerializationWithSchemaValidation);
+    test(
+      'serialize with schema validation',
+      testSerializationWithSchemaValidation,
+    );
   });
 }
 
@@ -43,14 +45,17 @@ testSerializationOfDates() {
 }
 
 testSerializationOfMaps() {
-  var simple = json.decode(god
-      .serialize({'hello': 'world', 'one': 1, 'class': SampleClass('world')}));
-  var nested = json.decode(god.serialize({
-    'foo': {
-      'bar': 'baz',
-      'funny': {'how': 'life', 'seems': 2, 'hate': 'us sometimes'}
-    }
-  }));
+  var simple = json.decode(
+    god.serialize({'hello': 'world', 'one': 1, 'class': SampleClass('world')}),
+  );
+  var nested = json.decode(
+    god.serialize({
+      'foo': {
+        'bar': 'baz',
+        'funny': {'how': 'life', 'seems': 2, 'hate': 'us sometimes'},
+      },
+    }),
+  );
 
   expect(simple['hello'], equals('world'));
   expect(simple['one'], equals(1));
@@ -67,7 +72,7 @@ testSerializationOfLists() {
     1,
     "2",
     {"num": 3, "four": SampleClass('five')},
-    SampleClass('six')..nested.add(SampleNestedClass('seven'))
+    SampleClass('six')..nested.add(SampleNestedClass('seven')),
   ];
   String s = god.serialize(pandorasBox);
   print(s);
@@ -110,8 +115,10 @@ testSerializationViaReflection() {
 }
 
 testSerializationWithSchemaValidation() async {
-  BabelRc babelRc =
-      BabelRc(presets: ['es2015', 'stage-0'], plugins: ['add-module-exports']);
+  BabelRc babelRc = BabelRc(
+    presets: ['es2015', 'stage-0'],
+    plugins: ['add-module-exports'],
+  );
 
   String s = god.serialize(babelRc);
   print(s);

@@ -10,14 +10,20 @@ main() {
 
     test('deserialize maps', testDeserializationOfMaps);
 
-    test('deserialize maps + reflection',
-        testDeserializationOfMapsWithReflection);
+    test(
+      'deserialize maps + reflection',
+      testDeserializationOfMapsWithReflection,
+    );
 
-    test('deserialize lists + reflection',
-        testDeserializationOfListsAsWellAsViaReflection);
+    test(
+      'deserialize lists + reflection',
+      testDeserializationOfListsAsWellAsViaReflection,
+    );
 
-    test('deserialize with schema validation',
-        testDeserializationWithSchemaValidation);
+    test(
+      'deserialize with schema validation',
+      testDeserializationWithSchemaValidation,
+    );
   });
 }
 
@@ -79,8 +85,9 @@ testDeserializationOfListsAsWellAsViaReflection() {
   ]
   ''';
 
-  var list = god.deserialize(json, outputType: (<SampleClass>[]).runtimeType)
-      as List<SampleClass>;
+  var list =
+      god.deserialize(json, outputType: (<SampleClass>[]).runtimeType)
+          as List<SampleClass>;
   SampleClass first = list[0];
   SampleClass second = list[1];
 

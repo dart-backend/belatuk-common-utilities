@@ -1,5 +1,9 @@
 # Change Log
 
+## 5.5.0
+
+* Require Dart >= 3.8
+
 ## 5.4.1
 
 * Updated `mime` to 2.0.0

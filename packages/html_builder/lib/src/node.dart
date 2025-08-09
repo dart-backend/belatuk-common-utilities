@@ -1,10 +1,11 @@
 import 'package:collection/collection.dart';
 
 /// Shorthand function to generate a new [Node].
-Node h(String tagName,
-        [Map<String, dynamic> attributes = const {},
-        Iterable<Node> children = const []]) =>
-    Node(tagName, attributes, children);
+Node h(
+  String tagName, [
+  Map<String, dynamic> attributes = const {},
+  Iterable<Node> children = const [],
+]) => Node(tagName, attributes, children);
 
 /// Represents an HTML node.
 class Node {
@@ -12,16 +13,20 @@ class Node {
   final Map<String, dynamic> attributes = {};
   final List<Node> children = [];
 
-  Node(this.tagName,
-      [Map<String, dynamic> attributes = const {},
-      Iterable<Node> children = const []]) {
+  Node(
+    this.tagName, [
+    Map<String, dynamic> attributes = const {},
+    Iterable<Node> children = const [],
+  ]) {
     this
       ..attributes.addAll(attributes)
       ..children.addAll(children);
   }
 
-  Node._selfClosing(this.tagName,
-      [Map<String, dynamic> attributes = const {}]) {
+  Node._selfClosing(
+    this.tagName, [
+    Map<String, dynamic> attributes = const {},
+  ]) {
     this.attributes.addAll(attributes);
   }
 
@@ -30,8 +35,10 @@ class Node {
     return other is Node &&
         other.tagName == tagName &&
         const ListEquality<Node>().equals(other.children, children) &&
-        const MapEquality<String, dynamic>()
-            .equals(other.attributes, attributes);
+        const MapEquality<String, dynamic>().equals(
+          other.attributes,
+          attributes,
+        );
   }
 
   @override
@@ -56,7 +63,7 @@ class SelfClosingNode extends Node {
 
   // ignore: use_super_parameters
   SelfClosingNode(String tagName, [Map<String, dynamic> attributes = const {}])
-      : super._selfClosing(tagName, attributes);
+    : super._selfClosing(tagName, attributes);
 }
 
 /// Represents a text node.

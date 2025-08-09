@@ -4,16 +4,21 @@ import 'package:string_scanner/string_scanner.dart';
 
 final Parser minus = match('-');
 
-final Parser<int> digit =
-    match(RegExp(r'[0-9]'), errorMessage: 'Expected a number');
+final Parser<int> digit = match(
+  RegExp(r'[0-9]'),
+  errorMessage: 'Expected a number',
+);
 
 final Parser digits = digit.plus();
 
 final Parser dot = match('.');
 
-final Parser decimal = ( // digits, (dot, digits)?
-        digits & (dot & digits).opt() //
-    );
+final Parser decimal =
+    ( // digits, (dot, digits)?
+    digits &
+    (dot & digits)
+        .opt() //
+        );
 
 final Parser number = //
     (minus.opt() & decimal) // minus?, decimal

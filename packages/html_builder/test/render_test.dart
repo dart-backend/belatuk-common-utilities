@@ -7,9 +7,11 @@ void main() {
     var $dom = html(
       lang: 'en',
       c: [
-        head(c: [
-          title(c: [text('Hello, world!')])
-        ]),
+        head(
+          c: [
+            title(c: [text('Hello, world!')]),
+          ],
+        ),
         body(
           p: {'unresolved': true},
           c: [
@@ -17,7 +19,7 @@ void main() {
             br(),
             hr(),
           ],
-        )
+        ),
       ],
     );
 

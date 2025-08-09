@@ -25,16 +25,21 @@ void main() {
     return args[0];
   });
 
-  var number =
-      match(RegExp(r'[0-9]+(\.[0-9]+)?'), errorMessage: 'Expected a number.')
-          .map((r) => num.parse(r.span!.text));
+  var number = match(
+    RegExp(r'[0-9]+(\.[0-9]+)?'),
+    errorMessage: 'Expected a number.',
+  ).map((r) => num.parse(r.span!.text));
 
-  var id = match(
-          RegExp(
-              r'[A-Za-z_!\\$",\\+-\\./:;\\?<>%&\\*@\[\]\\{\}\\|`\\^~][A-Za-z0-9_!\\$",\\+-\\./:;\\?<>%&\*@\[\]\\{\}\\|`\\^~]*'),
-          errorMessage: 'Expected an ID')
-      .map((r) => symbols[r.span!.text] ??=
-          throw "Undefined symbol: '${r.span!.text}'");
+  var id =
+      match(
+        RegExp(
+          r'[A-Za-z_!\\$",\\+-\\./:;\\?<>%&\\*@\[\]\\{\}\\|`\\^~][A-Za-z0-9_!\\$",\\+-\\./:;\\?<>%&\*@\[\]\\{\}\\|`\\^~]*',
+        ),
+        errorMessage: 'Expected an ID',
+      ).map(
+        (r) => symbols[r.span!.text] ??=
+            throw "Undefined symbol: '${r.span!.text}'",
+      );
 
   var atom = number.castDynamic().or(id);
 

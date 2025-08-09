@@ -12,6 +12,10 @@ class FileUploadInfo {
   /// The bytes that make up this file.
   List<int> data;
 
-  FileUploadInfo(
-      {this.mimeType, this.name, this.filename, this.data = const []});
+  FileUploadInfo({
+    this.mimeType,
+    this.name,
+    this.filename,
+    this.data = const [],
+  });
 }

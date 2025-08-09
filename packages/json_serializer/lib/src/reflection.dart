@@ -12,8 +12,10 @@ typedef Deserializer = dynamic Function(dynamic value, {Type? outputType});
 List<Symbol> _findGetters(ClassMirror classMirror) {
   List<Symbol> result = [];
 
-  classMirror.instanceMembers
-      .forEach((Symbol symbol, MethodMirror methodMirror) {
+  classMirror.instanceMembers.forEach((
+    Symbol symbol,
+    MethodMirror methodMirror,
+  ) {
     if (methodMirror.isGetter &&
         symbol != hashCodeSymbol &&
         symbol != runtimeTypeSymbol) {
@@ -70,13 +72,16 @@ deserialize(value, Type outputType, Deserializer deserializer) {
       if (typeArguments.isEmpty) {
         it = value.map(deserializer);
       } else {
-        it = value.map((item) =>
-            deserializer(item, outputType: typeArguments[0].reflectedType));
+        it = value.map(
+          (item) =>
+              deserializer(item, outputType: typeArguments[0].reflectedType),
+        );
       }
 
       if (typeArguments.isEmpty) return it.toList();
       logger.info(
-          'Casting list elements to ${typeArguments[0].reflectedType} via List.from');
+        'Casting list elements to ${typeArguments[0].reflectedType} via List.from',
+      );
 
       var mirror = reflectType(List, [typeArguments[0].reflectedType]);
 
@@ -86,7 +91,8 @@ deserialize(value, Type outputType, Deserializer deserializer) {
         return output;
       } else {
         throw ArgumentError(
-            '${typeArguments[0].reflectedType} is not a class.');
+          '${typeArguments[0].reflectedType} is not a class.',
+        );
       }
     } else if (value is Map) {
       return _deserializeFromJsonByReflection(value, deserializer, outputType);
@@ -101,7 +107,10 @@ deserialize(value, Type outputType, Deserializer deserializer) {
 
 /// Uses mirrors to deserialize an object.
 _deserializeFromJsonByReflection(
-    data, Deserializer deserializer, Type outputType) {
+  data,
+  Deserializer deserializer,
+  Type outputType,
+) {
   // Check for fromJson
   var typeMirror = reflectType(outputType);
 
@@ -133,8 +142,9 @@ _deserializeFromJsonByReflection(
     var typeArguments = classMirror.typeArguments;
 
     if (typeArguments.isEmpty ||
-        classMirror.typeArguments
-            .every((t) => t == currentMirrorSystem().dynamicType)) {
+        classMirror.typeArguments.every(
+          (t) => t == currentMirrorSystem().dynamicType,
+        )) {
       return data;
     } else {
       var mapType =
@@ -158,23 +168,30 @@ _deserializeFromJsonByReflection(
         var deserializedValue = deserializer(data[key]);
 
         logger.info(
-            "I want to set $key to the following ${deserializedValue.runtimeType}: $deserializedValue");
+          "I want to set $key to the following ${deserializedValue.runtimeType}: $deserializedValue",
+        );
         // Get target type of getter
         Symbol searchSymbol = Symbol(key.toString());
-        Symbol symbolForGetter = classMirror.instanceMembers.keys
-            .firstWhere((x) => x == searchSymbol);
+        Symbol symbolForGetter = classMirror.instanceMembers.keys.firstWhere(
+          (x) => x == searchSymbol,
+        );
         Type requiredType = classMirror
-            .instanceMembers[symbolForGetter]!.returnType.reflectedType;
+            .instanceMembers[symbolForGetter]!
+            .returnType
+            .reflectedType;
         if (data[key].runtimeType != requiredType) {
           logger.info("Currently, $key is a ${data[key].runtimeType}.");
           logger.info("However, $key must be a $requiredType.");
 
-          deserializedValue =
-              deserializer(deserializedValue, outputType: requiredType);
+          deserializedValue = deserializer(
+            deserializedValue,
+            outputType: requiredType,
+          );
         }
 
         logger.info(
-            "Final deserialized value for $key: $deserializedValue <${deserializedValue.runtimeType}>");
+          "Final deserialized value for $key: $deserializedValue <${deserializedValue.runtimeType}>",
+        );
         instanceMirror.setField(Symbol(key.toString()), deserializedValue);
 
         logger.info("Success! $key has been set to $deserializedValue");

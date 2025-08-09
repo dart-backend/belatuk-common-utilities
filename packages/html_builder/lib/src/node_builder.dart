@@ -7,16 +7,21 @@ class NodeBuilder {
   final Iterable<Node> children;
   Node? _existing;
 
-  NodeBuilder(this.tagName,
-      {this.attributes = const {}, this.children = const []});
+  NodeBuilder(
+    this.tagName, {
+    this.attributes = const {},
+    this.children = const [],
+  });
 
   /// Creates a [NodeBuilder] that just spits out an already-existing [Node].
   factory NodeBuilder.existing(Node existingNode) =>
       NodeBuilder(existingNode.tagName).._existing = existingNode;
 
-  factory NodeBuilder.from(Node node) => NodeBuilder(node.tagName,
-      attributes: Map<String, dynamic>.from(node.attributes),
-      children: List<Node>.from(node.children));
+  factory NodeBuilder.from(Node node) => NodeBuilder(
+    node.tagName,
+    attributes: Map<String, dynamic>.from(node.attributes),
+    children: List<Node>.from(node.children),
+  );
 
   /// Builds the node.
   Node build({bool selfClosing = false}) =>
@@ -26,13 +31,16 @@ class NodeBuilder {
           : Node(tagName, attributes, children));
 
   /// Produce a modified copy of this builder.
-  NodeBuilder change(
-      {String? tagName,
-      Map<String, dynamic>? attributes,
-      Iterable<Node>? children}) {
-    return NodeBuilder(tagName ?? this.tagName,
-        attributes: attributes ?? this.attributes,
-        children: children ?? this.children);
+  NodeBuilder change({
+    String? tagName,
+    Map<String, dynamic>? attributes,
+    Iterable<Node>? children,
+  }) {
+    return NodeBuilder(
+      tagName ?? this.tagName,
+      attributes: attributes ?? this.attributes,
+      children: children ?? this.children,
+    );
   }
 
   NodeBuilder changeTagName(String tagName) => change(tagName: tagName);
@@ -44,7 +52,8 @@ class NodeBuilder {
       change(children: children);
 
   NodeBuilder changeAttributesMapped(
-      Map<String, dynamic> Function(Map<String, dynamic>) f) {
+    Map<String, dynamic> Function(Map<String, dynamic>) f,
+  ) {
     var map = Map<String, dynamic>.from(attributes);
     return changeAttributes(f(map));
   }
@@ -58,8 +67,8 @@ class NodeBuilder {
       changeChildrenMapped((list) => list.map(f));
 
   NodeBuilder mapAttributes(
-          MapEntry<String, dynamic> Function(String, dynamic) f) =>
-      changeAttributesMapped((map) => map.map(f));
+    MapEntry<String, dynamic> Function(String, dynamic) f,
+  ) => changeAttributesMapped((map) => map.map(f));
 
   NodeBuilder setAttribute(String name, dynamic value) =>
       changeAttributesMapped((map) => map..[name] = value);
@@ -95,14 +104,16 @@ class NodeBuilder {
   }
 
   NodeBuilder addClass(String className) => setClassesMapped(
-      (classes) => classes.contains(className) ? classes : classes
-        ..add(className));
+    (classes) => classes.contains(className) ? classes : classes
+      ..add(className),
+  );
 
   NodeBuilder removeClass(String className) =>
       setClassesMapped((classes) => classes..remove(className));
 
-  NodeBuilder toggleClass(String className) =>
-      setClassesMapped((classes) => classes.contains(className)
-          ? (classes..remove(className))
-          : (classes..add(className)));
+  NodeBuilder toggleClass(String className) => setClassesMapped(
+    (classes) => classes.contains(className)
+        ? (classes..remove(className))
+        : (classes..add(className)),
+  );
 }

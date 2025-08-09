@@ -5,7 +5,7 @@ void main() {
   test('can merge two simple maps', () {
     var merged = mergeMap([
       {'hello': 'world'},
-      {'hello': 'dolly'}
+      {'hello': 'dolly'},
     ]);
     expect(merged['hello'], equals('dolly'));
   });
@@ -14,7 +14,7 @@ void main() {
     var merged = mergeMap([
       {'letter': 'a'},
       {'letter': 'b'},
-      {'letter': 'c'}
+      {'letter': 'c'},
     ]);
     expect(merged['letter'], equals('c'));
   });
@@ -23,12 +23,12 @@ void main() {
     // ignore: omit_local_variable_types
     Map map1 = {
       'hello': 'world',
-      'foo': {'nested': false}
+      'foo': {'nested': false},
     };
     // ignore: omit_local_variable_types
     Map map2 = {
       'goodbye': 'sad life',
-      'foo': {'nested': true, 'it': 'works'}
+      'foo': {'nested': true, 'it': 'works'},
     };
     var merged = mergeMap([map1, map2]);
 
@@ -42,16 +42,16 @@ void main() {
     // ignore: omit_local_variable_types
     Map map1 = {
       'hello': 'world',
-      'foo': {'nested': false}
+      'foo': {'nested': false},
     };
     // ignore: omit_local_variable_types
     Map map2 = {
       'goodbye': 'sad life',
-      'foo': {'nested': true, 'it': 'works'}
+      'foo': {'nested': true, 'it': 'works'},
     };
     // ignore: omit_local_variable_types
     Map map3 = {
-      'foo': {'nested': 'supersession'}
+      'foo': {'nested': 'supersession'},
     };
 
     var merged = mergeMap([map1, map2, map3]);
@@ -62,14 +62,14 @@ void main() {
     // ignore: omit_local_variable_types
     Map map1 = {
       'a': {
-        'b': {'c': 'd'}
-      }
+        'b': {'c': 'd'},
+      },
     };
     // ignore: omit_local_variable_types
     Map map2 = {
       'a': {
-        'b': {'c': 'D', 'e': 'f'}
-      }
+        'b': {'c': 'D', 'e': 'f'},
+      },
     };
     var merged = mergeMap([map1, map2]);
 
@@ -81,20 +81,20 @@ void main() {
     // ignore: omit_local_variable_types
     Map map1 = {
       'a': {
-        'b': {'c': 'd'}
-      }
+        'b': {'c': 'd'},
+      },
     };
     // ignore: omit_local_variable_types
     Map map2 = {
       'a': {
-        'b': {'c': 'D', 'e': 'f'}
-      }
+        'b': {'c': 'D', 'e': 'f'},
+      },
     };
     // ignore: omit_local_variable_types
     Map map3 = {
       'a': {
-        'b': {'e': 'supersession'}
-      }
+        'b': {'e': 'supersession'},
+      },
     };
     var merged = mergeMap([map1, map2, map3]);
 

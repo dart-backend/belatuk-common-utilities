@@ -81,7 +81,8 @@ class RangeHeaderItem implements Comparable<RangeHeaderItem> {
     if (end == -1) {
       if (totalSize == null) {
         throw UnsupportedError(
-            'If the end of this range is unknown, `totalSize` must not be null.');
+          'If the end of this range is unknown, `totalSize` must not be null.',
+        );
       } else {
         // if (end == totalSize - 1) {
         return '$s-${totalSize - 1}/$totalSize';

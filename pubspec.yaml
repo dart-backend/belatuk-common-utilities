@@ -1,6 +1,21 @@
 name: belatuk_common_utilities_workspace
 
+publish_to: none
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
+
+workspace:
+  - packages/body_parser
+  - packages/code_buffer
+  - packages/combinator
+  - packages/html_builder
+  - packages/json_serializer
+  - packages/merge_map
+  - packages/pretty_logging
+  - packages/pub_sub
+  - packages/range_header
+  - packages/symbol_table
+  - packages/user_agent
+
 dev_dependencies:
-  melos: ^6.0.0
+  melos: ^7.1.0

@@ -2,8 +2,9 @@ name: belatuk_html_builder
 version: 5.4.0
 description: Build HTML AST's and render them to HTML. This can be used as an internal DSL, i.e. for a templating engine.
 homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/html_builder
+resolution: workspace
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 dependencies:
   collection: ^1.17.0
 dev_dependencies:

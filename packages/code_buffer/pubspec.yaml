@@ -1,13 +1,16 @@
 name: belatuk_code_buffer
-version: 5.4.0
+version: 5.5.0
 description: An advanced StringBuffer geared toward generating code, and source maps.
 homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/code_buffer
 resolution: workspace
+
 environment:
   sdk: '>=3.9.0 <4.0.0'
+
 dependencies:
   charcode: ^1.2.0
   source_span: ^1.8.1
+
 dev_dependencies:
   test: ^1.24.0
   lints: ^6.0.0

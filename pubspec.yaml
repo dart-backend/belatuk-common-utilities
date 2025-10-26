@@ -17,5 +17,7 @@ workspace:
   - packages/symbol_table
   - packages/user_agent
 
-dev_dependencies:
-  melos: ^7.1.0
+dependencies:
+  melos: ^7.3.0
+
+melos:

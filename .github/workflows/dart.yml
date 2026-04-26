@@ -7,9 +7,9 @@ name: Betaluk Common Utilities
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -24,8 +24,8 @@ jobs:
       # - uses: dart-lang/setup-dart@v1
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: "3.9.3"
-      - uses: bluefireteam/melos-action@v3 
+          sdk: "3.11.4"
+      - uses: bluefireteam/melos-action@v3
         with:
           run-bootstrap: false
 
@@ -49,4 +49,3 @@ jobs:
       - id: belatuk_common_test
         name: Run tests
         run: melos exec "dart test"
-

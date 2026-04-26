@@ -1,5 +1,9 @@
 # Change Log
 
+## 5.7.0
+
+* Require Dart >= 3.11
+
 ## 5.6.0
 
 * Require Dart >= 3.9

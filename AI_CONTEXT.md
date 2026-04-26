@@ -6,7 +6,7 @@
 
 ## Monorepo Architecture
 
-The repository uses [Melos](https://melos.invertase.dev/) and **Dart Workspaces** (requiring Dart SDK `>=3.9.0 <4.0.0`) to manage its multiple packages.
+The repository uses [Melos](https://melos.invertase.dev/) and **Dart Workspaces** (requiring Dart SDK `>=3.11.4 <4.0.0`) to manage its multiple packages.
 
 - **`melos.yaml`**: Configures the workspace for Melos scripting and management.
 - **`pubspec.yaml`**: Defined as a `workspace` root, listing all internal packages so they resolve locally.

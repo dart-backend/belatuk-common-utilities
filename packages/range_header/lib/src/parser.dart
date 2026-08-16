@@ -1,6 +1,7 @@
 import 'package:charcode/charcode.dart';
 import 'package:source_span/source_span.dart';
 import 'package:string_scanner/string_scanner.dart';
+
 import 'exception.dart';
 import 'range_header.dart';
 import 'range_header_impl.dart';

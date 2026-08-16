@@ -4,8 +4,6 @@
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/symbol_table/LICENSE)
 
-**Replacement of `package:symbol_table` with breaking changes to support NNBD.**
-
 A generic symbol table implementation in Dart, with support for scopes and constants.
 The symbol tables produced by this package are hierarchical (in this case, tree-shaped),
 and utilize basic memoization to speed up repeated lookups.

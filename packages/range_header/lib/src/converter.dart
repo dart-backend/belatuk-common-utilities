@@ -5,8 +5,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'dart:math';
+
 import 'package:async/async.dart';
 import 'package:charcode/ascii.dart';
+
 import 'range_header.dart';
 
 /// A [StreamTransformer] that uses a parsed [RangeHeader] and transforms an input stream

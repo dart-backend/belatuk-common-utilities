@@ -4,8 +4,6 @@
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/pub_sub/LICENSE)
 
-**Replacement of `package:pub_sub` with breaking changes to support NNBD.**
-
 Keep application instances in sync with a simple pub/sub API.
 
 ## Installation
@@ -14,7 +12,7 @@ Add `belatuk_pub_sub` as a dependency in your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  belatuk_pub_sub: ^6.2.0
+  belatuk_pub_sub: ^6.6.0
 ```
 
 Then, be sure to run `dart pub get` in your terminal.

@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:belatuk_combinator/belatuk_combinator.dart';
 import 'package:string_scanner/string_scanner.dart';
 
@@ -15,13 +16,10 @@ final Parser<String> string = match<String>(
 
 /// Transforms `{username}:{password}` to `{"username": username, "password": password}`.
 final Parser<Map<String, String>> credentials =
-    chain<String>([
-      string.opt(),
-      match<String>(':'),
-      string.opt(),
-    ]).map<Map<String, String>>(
-      (r) => {'username': r.value![0], 'password': r.value![2]},
-    );
+    chain<String>([string.opt(), match<String>(':'), string.opt()])
+        .map<Map<String, String>>(
+          (r) => {'username': r.value![0], 'password': r.value![2]},
+        );
 
 /// We can actually embed a parser within another parser.
 ///

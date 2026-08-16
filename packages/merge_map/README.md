@@ -4,8 +4,6 @@
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/merge_map/LICENSE)
 
-**Replacement of `package:merge_map` with breaking changes to support NNBD.**
-
 Combine multiple Maps into one. Equivalent to
 [Object.assign](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign) in JS.
 

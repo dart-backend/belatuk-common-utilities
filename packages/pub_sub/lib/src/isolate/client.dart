@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:isolate';
+
 import 'package:uuid/uuid.dart';
 
 import '../protocol/protocol.dart';
@@ -47,8 +48,7 @@ class IsolateClient extends Client {
             if (!status) {
               c.completeError(
                 PubSubException(
-                  errorMessage ??
-                      'The server sent a failure response, but did not provide an error message.',
+                  errorMessage ?? 'The server sent a failure response, but did not provide an error message.',
                 ),
               );
             } else if (result is! Map) {

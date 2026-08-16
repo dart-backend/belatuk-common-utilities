@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:io';
+
 import 'package:belatuk_combinator/belatuk_combinator.dart';
 import 'package:string_scanner/string_scanner.dart';
 
@@ -7,17 +8,14 @@ import 'package:string_scanner/string_scanner.dart';
 Parser<num> calculatorGrammar() {
   var expr = reference<num>();
 
-  var number = match<num>(
-    RegExp(r'-?[0-9]+(\.[0-9]+)?'),
-  ).value((r) => num.parse(r.span!.text));
+  var number = match<num>(RegExp(r'-?[0-9]+(\.[0-9]+)?'))
+      .value((r) => num.parse(r.span!.text));
 
-  var hex = match<int>(
-    RegExp(r'0x([A-Fa-f0-9]+)'),
-  ).map((r) => int.parse(r.scanner.lastMatch![1]!, radix: 16));
+  var hex = match<int>(RegExp(r'0x([A-Fa-f0-9]+)'))
+      .map((r) => int.parse(r.scanner.lastMatch![1]!, radix: 16));
 
-  var binary = match<int>(
-    RegExp(r'([0-1]+)b'),
-  ).map((r) => int.parse(r.scanner.lastMatch![1]!, radix: 2));
+  var binary = match<int>(RegExp(r'([0-1]+)b'))
+      .map((r) => int.parse(r.scanner.lastMatch![1]!, radix: 2));
 
   var alternatives = <Parser<num>>[];
 

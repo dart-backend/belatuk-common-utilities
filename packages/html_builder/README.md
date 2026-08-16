@@ -4,8 +4,6 @@
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/html_builder/LICENSE)
 
-**Replacement of `package:html_builder` with breaking changes to support NNBD.**
-
 This package builds HTML AST's and renders them to HTML. It can be used as an internal DSL, i.e. for a templating engine.
 
 ## Installation
@@ -14,7 +12,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_html_builder: ^5.1.0
+  belatuk_html_builder: ^5.5.0
 ```
 
 ## Usage

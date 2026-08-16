@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:math';
+
 import 'adapter.dart';
 import 'client.dart';
+
 import 'package:collection/collection.dart' show IterableExtension;
+
 import 'publish.dart';
 import 'subscription.dart';
 

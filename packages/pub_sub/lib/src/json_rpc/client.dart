@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:stream_channel/stream_channel.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc_2;
 import 'package:uuid/uuid.dart';
+
 import '../../belatuk_pub_sub.dart';
 
 /// A [Client] implementation that communicates via JSON RPC 2.0.
@@ -46,8 +48,7 @@ class JsonRpc2Client extends Client {
         } else if (!(data['status'] as bool)) {
           c.completeError(
             PubSubException(
-              data['error_message']?.toString() ??
-                  'The server sent a failure response, but did not provide an error message.',
+              data['error_message']?.toString() ?? 'The server sent a failure response, but did not provide an error message.',
             ),
           );
         } else {

@@ -4,8 +4,6 @@
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/body_parser/LICENSE)
 
-**Replacement of `package:body_parser` with breaking changes to support NNBD.**
-
 Parse request bodies and query strings in Dart, as well multipart/form-data uploads. No external dependencies required.
 
 This is the request body parser powering the [Angel3 framework](https://pub.dev/packages/angel3_framework). If you are looking for a server-side solution with dependency injection, WebSockets, and more, then I highly recommend it as your first choice. Bam!
@@ -28,7 +26,7 @@ This package is similar to Express.js's `body-parser` module. It fully supports 
 To install Body Parser for your Dart project, simply add body_parser to your pub dependencies.
 
   dependencies:
-      belatuk_body_parser: ^5.2.0
+      belatuk_body_parser: ^5.6.0
 
 ### Usage
 

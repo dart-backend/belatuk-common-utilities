@@ -1,6 +1,7 @@
 library;
 
 import 'dart:mirrors';
+
 import '../belatuk_json_serializer.dart';
 
 const Symbol hashCodeSymbol = #hashCode;
@@ -147,9 +148,10 @@ dynamic _deserializeFromJsonByReflection(
         )) {
       return data;
     } else {
-      var mapType =
-          reflectType(Map, typeArguments.map((t) => t.reflectedType).toList())
-              as ClassMirror;
+      var mapType = reflectType(
+        Map,
+        typeArguments.map((t) => t.reflectedType).toList(),
+      ) as ClassMirror;
       logger.info('Casting this map $data to Map of [$typeArguments]');
       var output = mapType.newInstance(Symbol(''), []).reflectee;
 

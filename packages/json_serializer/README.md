@@ -5,15 +5,13 @@
 [![Gitter](https://img.shields.io/gitter/room/angel_dart/discussion)](https://gitter.im/angel_dart/discussion)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/json_serializer/LICENSE)
 
-**Replacement of `package:json_god` with breaking changes to support NNBD.**
-
 The ***new and improved*** definitive solution for JSON in Dart. It supports synchronously transform an object into a JSON string and also deserialize a JSON string back into an instance of any type.
 
 ## Installation
 
 ```yaml
   dependencies:
-    belatuk_json_serializer: ^7.1.0
+    belatuk_json_serializer: ^7.5.0
 ```
 
 ## Usage

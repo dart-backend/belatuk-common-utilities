@@ -5,8 +5,6 @@
 [![Gitter](https://img.shields.io/gitter/room/angel_dart/discussion)](https://gitter.im/angel_dart/discussion)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/pretty_logging/LICENSE)
 
-**Replacement of `package:pretty_logging` with breaking changes to support NNBD.**
-
 Standalone helper for colorful logging output, using pkg:io AnsiCode.
 
 ## Installation
@@ -15,7 +13,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_pretty_logging: ^6.1.0
+  belatuk_pretty_logging: ^6.5.0
 ```
 
 ## Usage

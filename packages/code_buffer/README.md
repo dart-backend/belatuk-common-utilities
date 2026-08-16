@@ -4,8 +4,6 @@
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/code_buffer/LICENSE)
 
-**Replacement of `package:code_buffer` with breaking changes to support NNBD.**
-
 An advanced StringBuffer geared toward generating code, and source maps.
 
 ## Installation
@@ -14,7 +12,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_code_buffer: ^5.1.0
+  belatuk_code_buffer: ^5.5.0
 ```
 
 ## Usage

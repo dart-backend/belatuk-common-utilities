@@ -1,11 +1,14 @@
 name: belatuk_symbol_table
-version: 5.6.0
+version: 5.5.0
 description: A generic symbol table implementation in Dart, with support for scopes and constants.
-homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/symbol_table
+homepage: https://github.com/dart-backend/belatuk-common-utilities
+repository: https://github.com/dart-backend/belatuk-common-utilities
+issue_tracker: https://github.com/dart-backend/belatuk-common-utilities
+
 resolution: workspace
 
 environment:
-  sdk: '>=3.11.0 <4.0.0'
+  sdk: '>=3.13.0 <4.0.0'
 
 dependencies:
   collection: ^1.17.0  

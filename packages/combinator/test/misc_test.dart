@@ -1,5 +1,6 @@
 import 'package:belatuk_combinator/belatuk_combinator.dart';
 import 'package:test/test.dart';
+
 import 'common.dart';
 
 void main() {
@@ -18,9 +19,9 @@ void main() {
   });
 
   test('check', () {
-    var parser = match<int>(
-      RegExp(r'[A-Za-z]+'),
-    ).value((r) => r.span!.length).check(greaterThan(3));
+    var parser = match<int>(RegExp(r'[A-Za-z]+'))
+        .value((r) => r.span!.length)
+        .check(greaterThan(3));
     expect(parser.parse(scan('helloworld')).successful, isTrue);
     expect(parser.parse(scan('yo')).successful, isFalse);
   });

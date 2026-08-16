@@ -1,11 +1,14 @@
 name: belatuk_json_serializer
-version: 7.6.0
+version: 7.5.0
 description: Easy JSON to Object serialization and deserialization in Dart.
-homepage: https://github.com/dart-backend/belatuk-common-utilities/tree/main/packages/json_serializer
+homepage: https://github.com/dart-backend/belatuk-common-utilities
+repository: https://github.com/dart-backend/belatuk-common-utilities
+issue_tracker: https://github.com/dart-backend/belatuk-common-utilities/issues
+
 resolution: workspace
 
 environment:
-  sdk: '>=3.11.0 <4.0.0'
+  sdk: '>=3.13.0 <4.0.0'
 
 dependencies:
   logging: ^1.0.1

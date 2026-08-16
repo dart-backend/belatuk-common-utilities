@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:stream_channel/stream_channel.dart';
 import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc_2;
 import 'package:uuid/uuid.dart';
+
 import '../../belatuk_pub_sub.dart';
 
 /// A [Adapter] implementation that communicates via JSON RPC 2.0.
@@ -42,9 +44,8 @@ class JsonRpc2Adapter extends Adapter {
   Future close() {
     if (_peer?.isClosed != true) _peer?.close();
 
-    Future.wait(
-      _peers.where((s) => !s.isClosed).map((s) => s.close()),
-    ).then((_) => _peers.clear());
+    Future.wait(_peers.where((s) => !s.isClosed).map((s) => s.close()))
+        .then((_) => _peers.clear());
     return Future.value();
   }
 

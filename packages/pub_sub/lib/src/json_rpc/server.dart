@@ -6,6 +6,21 @@ import 'package:uuid/uuid.dart';
 
 import '../../belatuk_pub_sub.dart';
 
+/// Sends [params] as a [method] notification to [peer], unless the client
+/// has already disconnected and there is nobody to send it to.
+void _notify(json_rpc_2.Peer peer, String method, Object? params) {
+  if (!peer.isClosed) peer.sendNotification(method, params);
+}
+
+/// Sends a failure response for the request [requestId] to [peer].
+void _sendError(json_rpc_2.Peer peer, String requestId, String errorMessage) {
+  _notify(peer, requestId, {
+    'status': false,
+    'request_id': requestId,
+    'error_message': errorMessage,
+  });
+}
+
 /// A [Adapter] implementation that communicates via JSON RPC 2.0.
 class JsonRpc2Adapter extends Adapter {
   final StreamController<PublishRequest> _onPublish =
@@ -14,11 +29,14 @@ class JsonRpc2Adapter extends Adapter {
       StreamController<SubscriptionRequest>();
   final StreamController<UnsubscriptionRequest> _onUnsubscribe =
       StreamController<UnsubscriptionRequest>();
+  // Broadcast, so disconnects are not buffered when nothing listens.
+  final StreamController<String> _onDisconnect =
+      StreamController<String>.broadcast();
 
   final List<json_rpc_2.Peer> _peers = [];
   final Uuid _uuid = Uuid();
 
-  json_rpc_2.Peer? _peer;
+  StreamSubscription<StreamChannel<String>>? _clientSubscription;
 
   /// A [Stream] of incoming clients, who can both send and receive string data.
   final Stream<StreamChannel<String>> clientStream;
@@ -41,12 +59,30 @@ class JsonRpc2Adapter extends Adapter {
   Stream<UnsubscriptionRequest> get onUnsubscribe => _onUnsubscribe.stream;
 
   @override
-  Future close() {
-    if (_peer?.isClosed != true) _peer?.close();
+  Stream<String> get onDisconnect => _onDisconnect.stream;
 
-    Future.wait(_peers.where((s) => !s.isClosed).map((s) => s.close()))
-        .then((_) => _peers.clear());
-    return Future.value();
+  /// Closes every client connection, and stops listening to [clientStream].
+  ///
+  /// Cancelling the subscription to [clientStream] may close its source; for
+  /// example, a `ServerSocket`'s stream stops accepting connections.
+  @override
+  Future close() async {
+    try {
+      // Close the connections first, so no request arrives after the request
+      // streams are closed. A connection that ended with an error is closed
+      // all the same.
+      await Future.wait([
+        if (_clientSubscription != null) _clientSubscription!.cancel(),
+        for (var peer in List.of(_peers))
+          if (!peer.isClosed) peer.close().then((_) {}, onError: (_) {}),
+      ]);
+    } finally {
+      _peers.clear();
+      _onPublish.close();
+      _onSubscribe.close();
+      _onUnsubscribe.close();
+      _onDisconnect.close();
+    }
   }
 
   String? _getClientId(json_rpc_2.Parameters params) {
@@ -57,54 +93,86 @@ class JsonRpc2Adapter extends Adapter {
     }
   }
 
+  /// Registers a handler for a [method] that clients send as a notification.
+  ///
+  /// Notifications get no automatic error reply, so if the handler fails, the
+  /// failure is sent back on the request's `request_id` instead.
+  void _registerRequest(
+    json_rpc_2.Peer peer,
+    String method,
+    void Function(json_rpc_2.Parameters params, String requestId) handler,
+  ) {
+    peer.registerMethod(method, (json_rpc_2.Parameters params) {
+      // The disconnect may already have been reported, so this request must
+      // not reach the server; there is nobody to respond to anyway.
+      if (peer.isClosed) return;
+
+      String requestId;
+      try {
+        requestId = params['request_id'].asString;
+      } catch (_) {
+        // There's no request to respond to.
+        return;
+      }
+
+      try {
+        handler(params, requestId);
+      } catch (e) {
+        var message = e is json_rpc_2.RpcException
+            ? e.message
+            : 'The server could not handle this request.';
+        _sendError(peer, requestId, message);
+      }
+    });
+  }
+
   @override
   void start() {
-    clientStream.listen((client) {
-      var peer = _peer = json_rpc_2.Peer(client);
+    _clientSubscription = clientStream.listen((client) {
+      var peer = json_rpc_2.Peer(client);
+      var connectionId = _uuid.v4();
+      _peers.add(peer);
 
-      peer.registerMethod('publish', (json_rpc_2.Parameters params) async {
-        var requestId = params['request_id'].asString;
-        var clientId = _getClientId(params);
-        var eventName = params['event_name'].asString;
-        var value = params['value'].value;
+      _registerRequest(peer, 'publish', (params, requestId) {
         var rq = _JsonRpc2PublishRequestImpl(
           requestId,
-          clientId,
-          eventName,
-          value,
+          _getClientId(params),
+          params['event_name'].asString,
+          params['value'].valueOr(null),
           peer,
+          connectionId,
         );
         _onPublish.add(rq);
       });
 
-      peer.registerMethod('subscribe', (json_rpc_2.Parameters params) async {
-        var requestId = params['request_id'].asString;
-        var clientId = _getClientId(params);
-        var eventName = params['event_name'].asString;
+      _registerRequest(peer, 'subscribe', (params, requestId) {
         var rq = _JsonRpc2SubscriptionRequestImpl(
-          clientId,
-          eventName,
+          _getClientId(params),
+          params['event_name'].asString,
           requestId,
           peer,
           _uuid,
+          connectionId,
         );
         _onSubscribe.add(rq);
       });
 
-      peer.registerMethod('unsubscribe', (json_rpc_2.Parameters params) async {
-        var requestId = params['request_id'].asString;
-        var clientId = _getClientId(params);
-        var subscriptionId = params['subscription_id'].asString;
+      _registerRequest(peer, 'unsubscribe', (params, requestId) {
         var rq = _JsonRpc2UnsubscriptionRequestImpl(
-          clientId,
-          subscriptionId,
+          _getClientId(params),
+          params['subscription_id'].asString,
           peer,
           requestId,
+          connectionId,
         );
         _onUnsubscribe.add(rq);
       });
 
       peer.listen();
+      peer.done.whenComplete(() {
+        _peers.remove(peer);
+        if (!_onDisconnect.isClosed) _onDisconnect.add(connectionId);
+      }).ignore();
     });
   }
 
@@ -130,17 +198,21 @@ class _JsonRpc2PublishRequestImpl extends PublishRequest {
 
   final json_rpc_2.Peer peer;
 
+  @override
+  final String connectionId;
+
   _JsonRpc2PublishRequestImpl(
     this.requestId,
     this.clientId,
     this.eventName,
     this.value,
     this.peer,
+    this.connectionId,
   );
 
   @override
   void accept(PublishResponse response) {
-    peer.sendNotification(requestId, {
+    _notify(peer, requestId, {
       'status': true,
       'request_id': requestId,
       'result': {
@@ -151,13 +223,7 @@ class _JsonRpc2PublishRequestImpl extends PublishRequest {
   }
 
   @override
-  void reject(String errorMessage) {
-    peer.sendNotification(requestId, {
-      'status': false,
-      'request_id': requestId,
-      'error_message': errorMessage,
-    });
-  }
+  void reject(String errorMessage) => _sendError(peer, requestId, errorMessage);
 }
 
 class _JsonRpc2SubscriptionRequestImpl extends SubscriptionRequest {
@@ -170,18 +236,22 @@ class _JsonRpc2SubscriptionRequestImpl extends SubscriptionRequest {
 
   final Uuid _uuid;
 
+  @override
+  final String connectionId;
+
   _JsonRpc2SubscriptionRequestImpl(
     this.clientId,
     this.eventName,
     this.requestId,
     this.peer,
     this._uuid,
+    this.connectionId,
   );
 
   @override
   FutureOr<Subscription> accept(String? clientId) {
     var id = _uuid.v4();
-    peer.sendNotification(requestId, {
+    _notify(peer, requestId, {
       'status': true,
       'request_id': requestId,
       'subscription_id': id,
@@ -191,13 +261,7 @@ class _JsonRpc2SubscriptionRequestImpl extends SubscriptionRequest {
   }
 
   @override
-  void reject(String errorMessage) {
-    peer.sendNotification(requestId, {
-      'status': false,
-      'request_id': requestId,
-      'error_message': errorMessage,
-    });
-  }
+  void reject(String errorMessage) => _sendError(peer, requestId, errorMessage);
 }
 
 class _JsonRpc2SubscriptionImpl extends Subscription {
@@ -212,7 +276,7 @@ class _JsonRpc2SubscriptionImpl extends Subscription {
 
   @override
   void dispatch(event) {
-    peer.sendNotification('event', {'event_name': eventName, 'value': event});
+    _notify(peer, 'event', {'event_name': eventName, 'value': event});
   }
 }
 
@@ -227,24 +291,22 @@ class _JsonRpc2UnsubscriptionRequestImpl extends UnsubscriptionRequest {
 
   final String requestId;
 
+  @override
+  final String connectionId;
+
   _JsonRpc2UnsubscriptionRequestImpl(
     this.clientId,
     this.subscriptionId,
     this.peer,
     this.requestId,
+    this.connectionId,
   );
 
   @override
   void accept() {
-    peer.sendNotification(requestId, {'status': true, 'result': {}});
+    _notify(peer, requestId, {'status': true, 'result': {}});
   }
 
   @override
-  void reject(String errorMessage) {
-    peer.sendNotification(requestId, {
-      'status': false,
-      'request_id': requestId,
-      'error_message': errorMessage,
-    });
-  }
+  void reject(String errorMessage) => _sendError(peer, requestId, errorMessage);
 }

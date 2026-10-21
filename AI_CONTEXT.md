@@ -30,3 +30,10 @@ The repository contains **11 separate packages** located under the `/packages/` 
 ## Key Dependencies
 
 These packages typically depend on Dart server-side libraries such as `belatuk_http_server`, `http_parser`, and `mime`. The project enforces code quality and formatting through `test` and standard `lints`.
+
+## Development Workflow
+
+- **Main Branch**: Stable production branch. Use this branch for all standard PR submissions.
+- **Feature Branches**: Work is done on `feature/<name>` branches with breaking changes recorded in each package's `CHANGELOG.md`.
+- **Tooling**: Run `dart pub get` at the root, or use `melos` to execute tasks across the monorepo (e.g., `melos exec "dart pub upgrade"`). Regenerate code with `dart run build_runner build --delete-conflicting-outputs` in the affected package.
+- **Changelog**: Every user-facing change gets an entry in the affected package's `CHANGELOG.md`, written as plain-English statements about the package (not commit messages). Group a release's entries under `### Breaking changes in X.Y.Z` (each entry prefixed `**Breaking:**`), `### New in X.Y.Z` and `### Fixes in X.Y.Z`, in that order, omitting empty sections. Prefix each fix with a bold area label, e.g. `* **Services:** An invalid id is a 400`. Commit messages use [Conventional Commits](https://www.conventionalcommits.org/) (`type: description`).

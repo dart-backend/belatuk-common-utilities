@@ -22,6 +22,12 @@ abstract class Adapter {
   /// Fires whenever a client cancels a subscription.
   Stream<UnsubscriptionRequest> get onUnsubscribe;
 
+  /// Fires with a request's `connectionId` when that connection closes.
+  ///
+  /// Once a connection is reported here, the adapter must not deliver any more
+  /// requests for it. Adapters that do not track connections never fire this.
+  Stream<String> get onDisconnect => const Stream.empty();
+
   /// Disposes of this adapter.
   Future close();
 

@@ -1,3 +1,6 @@
+/// The shared [MessageHandler] instance.
+const messageHandler = MessageHandler();
+
 /// A message handler class that handles the encoding/decoding of messages send
 /// between isolate [Client] and [Server].
 class MessageHandler {
@@ -14,9 +17,9 @@ class MessageHandler {
   static const _result = 'result';
   static const _listeners = 'listeners';
 
-  static const _publishErrorMsg = 'Expected client_id, event_name, and value';
-  static const _subscribeErrorMsg = 'Expected client_id, and event_name';
-  static const _unsubscribeErrorMsg = 'Expected client_id, and subscription_id';
+  static const _publishErrorMsg = 'Expected event_name';
+  static const _subscribeErrorMsg = 'Expected event_name';
+  static const _unsubscribeErrorMsg = 'Expected subscription_id';
 
   const MessageHandler();
 
@@ -59,10 +62,6 @@ class MessageHandler {
     };
   }
 
-  Map<String, dynamic> encodeEventMessage(String? requestId, Object message) {
-    return {_status: true, _requestId: requestId ?? '', _result: message};
-  }
-
   Map<String, dynamic> encodeSubscriptionResponseMessage(
     String? requestId,
     String? subscriptionId,
@@ -88,18 +87,7 @@ class MessageHandler {
     return {_status: true, _requestId: requestId, _result: {}};
   }
 
-  (bool, String?, Object?, String?) decodeUnsubscriptionResponseMessage(
-    Map<String, Object?> message,
-  ) {
-    var status = message[_status] as bool? ?? false;
-    var requestId = message[_requestId] as String?;
-    var result = message[_result];
-    var errorMessage = message[_errorMessage] as String?;
-
-    return (status, requestId, result, errorMessage);
-  }
-
-  Map<String, Object?> encodePublishResponseMessage2(
+  Map<String, Object?> encodePublishResponseMessage(
     String? requestId,
     int listeners,
     String? clientId,
@@ -116,28 +104,6 @@ class MessageHandler {
     var clientId = message[_clientId] as String?;
 
     return (listeners, clientId);
-  }
-
-  Map<String, Object?> encodePublishResponseMessage(
-    String? id,
-    String? requestId,
-    String? clientId,
-    String? eventName,
-    Object? value,
-  ) {
-    return {
-      _id: id,
-      _requestId: requestId,
-      _method: 'publish',
-      _params: {_clientId: clientId, _eventName: eventName, _value: value},
-    };
-  }
-
-  Map<String, dynamic> encodeResponseMessage(
-    String? requestId,
-    Object message,
-  ) {
-    return {_status: true, _requestId: requestId ?? '', _result: message};
   }
 
   (bool, String?, String?, Object?, String?) decodeResponseMessage(
@@ -214,6 +180,10 @@ class MessageHandler {
     var value = params[_value];
     var subscriptionId = params[_subscriptionId] as String?;
     return (clientId, eventName, subscriptionId, value);
+  }
+
+  Map<String, Object?> encodeDisconnectMessage(String? id) {
+    return {_id: id, _method: 'disconnect'};
   }
 
   Map<String, Object> encodeSendPortResponseMessage(String id) {

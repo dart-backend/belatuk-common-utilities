@@ -12,7 +12,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_html_builder: ^5.5.0
+  belatuk_html_builder: ^5.5.0+
 ```
 
 ## Usage

@@ -1,5 +1,18 @@
 # Change Log
 
+## 6.0.0
+
+### Breaking changes in 6.0.0
+
+* **Breaking:** Requires `belatuk_http_server` 5.0.0. Projects that still depend on `belatuk_http_server` 4.x cannot use this version.
+* **Breaking:** A multipart text field's value is stored exactly as sent. Before, it was split on `&` and `=` and URL-decoded, so code that relied on `+` turning into a space or `%XX` being decoded will see different values.
+
+### Fixes in 6.0.0
+
+* **Multipart:** A field value containing `&` and `=` can no longer add extra fields to the body, and a value containing `%` no longer makes the whole parse fail.
+* **Multipart:** An uploaded file without a `Content-Type` header keeps its original bytes, instead of having non-ASCII characters corrupted.
+* **Multipart:** An uploaded file without a `Content-Type` header is given the MIME type `text/plain`, instead of throwing a null-check error that discarded every field and file in the request.
+
 ## 5.6.0
 
 * Require Dart >= 3.13

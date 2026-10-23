@@ -123,6 +123,75 @@ Hello world
     expect(jsons['body']['hello'], equals('world'));
   });
 
+  test('Field values are not parsed as query syntax', () async {
+    var boundary = 'myBoundary';
+    var headers = <String, String>{
+      'content-type': 'multipart/form-data; boundary=$boundary',
+    };
+    var postData =
+        '''
+--$boundary
+Content-Disposition: form-data; name="comment"
+
+hi&admin=true
+--$boundary
+Content-Disposition: form-data; name="ratio"
+
+100%
+--$boundary
+Content-Disposition: form-data; name="expr"
+
+a+b
+--$boundary--
+'''
+            .replaceAll('\n', '\r\n');
+
+    var response = await client!.post(
+      Uri.parse(url!),
+      headers: headers,
+      body: postData,
+    );
+    var jsons = json.decode(response.body);
+    expect(jsons['error'], isNull);
+    expect(jsons['body']['comment'], equals('hi&admin=true'));
+    expect(jsons['body'].containsKey('admin'), isFalse);
+    expect(jsons['body']['ratio'], equals('100%'));
+    expect(jsons['body']['expr'], equals('a+b'));
+  });
+
+  test('Upload without Content-Type keeps bytes intact', () async {
+    var boundary = 'myBoundary';
+    var headers = <String, String>{
+      'content-type': 'multipart/form-data; boundary=$boundary',
+    };
+    var postData =
+        '''
+--$boundary
+Content-Disposition: form-data; name="hello"
+
+world
+--$boundary
+Content-Disposition: form-data; name="file"; filename="a.txt"
+
+café
+--$boundary--
+'''
+            .replaceAll('\n', '\r\n');
+
+    var response = await client!.post(
+      Uri.parse(url!),
+      headers: headers,
+      body: utf8.encode(postData),
+    );
+    var jsons = json.decode(response.body);
+    expect(jsons['error'], isNull);
+    var files = jsons['files'];
+    expect(files.length, equals(1));
+    expect(files[0]['mimeType'], equals('text/plain'));
+    expect(files[0]['data'], equals(utf8.encode('café')));
+    expect(jsons['body']['hello'], equals('world'));
+  });
+
   test('Multiple upload', () async {
     var boundary = 'myBoundary';
     var headers = <String, String>{

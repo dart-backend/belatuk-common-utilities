@@ -86,13 +86,18 @@ Future<BodyParseResult> parseBodyFromStream(
         await for (HttpMultipartFormData part in parts) {
           if (part.isBinary ||
               part.contentDisposition.parameters.containsKey('filename')) {
+            // Text parts arrive already decoded, so re-encode them with the
+            // same charset to recover the original bytes.
+            var encoding =
+                Encoding.getByName(part.contentType?.charset) ?? utf8;
             var builder = await part.fold(
               BytesBuilder(copy: false),
               (BytesBuilder b, d) =>
-                  b..add(d is! String ? (d as List<int>?)! : d.codeUnits),
+                  b..add(d is String ? encoding.encode(d) : d as List<int>),
             );
             var upload = FileUploadInfo(
-              mimeType: part.contentType!.mimeType,
+              // RFC 7578: a part without a Content-Type defaults to text/plain.
+              mimeType: part.contentType?.mimeType ?? 'text/plain',
               name: part.contentDisposition.parameters['name'],
               filename:
                   part.contentDisposition.parameters['filename'] ?? 'file',
@@ -100,10 +105,13 @@ Future<BodyParseResult> parseBodyFromStream(
             );
             result.files.add(upload);
           } else if (part.isText) {
+            var name = '${part.contentDisposition.parameters['name']}';
             var text = await part.join();
+            // Encode so that '&', '=', '+' and '%' in the raw value are
+            // treated as literal characters rather than query syntax.
             buildMapFromUri(
               result.body,
-              '${part.contentDisposition.parameters["name"]}=$text',
+              '${Uri.encodeQueryComponent(name)}=${Uri.encodeQueryComponent(text)}',
             );
           }
         }

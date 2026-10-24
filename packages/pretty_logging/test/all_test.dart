@@ -7,10 +7,19 @@ void main() {
   var error = StateError('Wrong!');
   var stack = StackTrace.fromString('#0 main');
 
-  List<String> log(LogRecord record, {bool Function(LogRecord)? omitError}) {
+  List<String> log(
+    LogRecord record, {
+    bool Function(LogRecord)? omitError,
+    bool Function(LogRecord)? omitStackTrace,
+  }) {
     var printed = <String>[];
     overrideAnsiOutput(false, () {
-      prettyLog(record, omitError: omitError, printFunction: printed.add);
+      prettyLog(
+        record,
+        omitError: omitError,
+        omitStackTrace: omitStackTrace,
+        printFunction: printed.add,
+      );
     });
     return printed;
   }
@@ -28,9 +37,15 @@ void main() {
     },
   );
 
-  test('omitError hides the error and stack trace, not the message', () {
-    var record = LogRecord(Level.WARNING, 'Request failed', 'test', error);
-    expect(log(record, omitError: (_) => true), equals(['$record']));
+  test('omitError hides only the error', () {
+    var record = LogRecord(
+      Level.WARNING,
+      'Request failed',
+      'test',
+      error,
+      stack,
+    );
+    expect(log(record, omitError: (_) => true), equals(['$record\n$stack']));
   });
 
   test('each line is wrapped in its color', () {
@@ -65,9 +80,76 @@ void main() {
     expect(log(record), equals(['$record\n$stack']));
   });
 
-  test('omitError can hide a stack trace without an error', () {
+  test('omitError is not asked about a stack trace without an error', () {
     var record = LogRecord(Level.WARNING, 'x', 'test', null, stack);
-    expect(log(record, omitError: (_) => true), equals(['$record']));
+    expect(
+      log(record, omitError: (r) => throw StateError('asked')),
+      equals(['$record\n$stack']),
+    );
+  });
+
+  test('a stack trace ending in a newline leaves no blank line', () {
+    // The VM's stack traces end in a newline.
+    var trailing = StackTrace.fromString('#0 main\n#1 run\n');
+    var record = LogRecord(Level.SEVERE, 'Oops!', 'test', error, trailing);
+    expect(log(record), equals(['$record\n$error\n#0 main\n#1 run']));
+  });
+
+  test('omitStackTrace hides only the stack trace', () {
+    var withError = LogRecord(Level.SEVERE, 'Oops!', 'test', error, stack);
+    var withoutError = LogRecord(Level.WARNING, 'x', 'test', null, stack);
+    bool omit(LogRecord _) => true;
+    expect(
+      log(withError, omitStackTrace: omit),
+      equals(['$withError\n$error']),
+    );
+    expect(log(withoutError, omitStackTrace: omit), equals(['$withoutError']));
+  });
+
+  test('several trailing newlines leave no blank line', () {
+    var record = LogRecord(
+      Level.SEVERE,
+      'Oops!',
+      'test',
+      'bad\n\n',
+      StackTrace.fromString('#0 main\n\n'),
+    );
+    expect(log(record), equals(['$record\nbad\n#0 main']));
+  });
+
+  test('omitStackTrace is not asked about a record with no stack trace', () {
+    var record = LogRecord(Level.SEVERE, 'Oops!', 'test', error);
+    expect(
+      log(record, omitStackTrace: (_) => throw StateError('asked')),
+      equals(['$record\n$error']),
+    );
+  });
+
+  test('omitError and omitStackTrace together hide both', () {
+    var record = LogRecord(Level.SEVERE, 'Oops!', 'test', error, stack);
+    expect(
+      log(record, omitError: (_) => true, omitStackTrace: (_) => true),
+      equals(['$record']),
+    );
+  });
+
+  test('an empty error is an uncolored empty line', () {
+    var record = LogRecord(Level.SEVERE, 'failed', 'test', '');
+    var printed = <String>[];
+    overrideAnsiOutput(true, () {
+      prettyLog(record, printFunction: printed.add);
+    });
+    expect(printed, equals(['${red.escape}$record${resetAll.escape}\n']));
+  });
+
+  test('a lone carriage return is a line break', () {
+    var record = LogRecord(Level.SEVERE, 'Oops!', 'test', 'a\rb');
+    var printed = <String>[];
+    overrideAnsiOutput(true, () {
+      prettyLog(record, printFunction: printed.add);
+    });
+    expect(printed.single, isNot(contains('\r')));
+    expect(printed.single, contains('${red.escape}b${resetAll.escape}'));
   });
 
   test('omitError returning false prints everything', () {

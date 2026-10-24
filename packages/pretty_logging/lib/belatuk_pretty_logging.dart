@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:logging/logging.dart';
 import 'package:io/ansi.dart';
 
@@ -5,10 +7,13 @@ import 'package:io/ansi.dart';
 ///
 /// The record's error and stack trace, if any, follow the message on their own
 /// lines. A stack trace is printed even when there is no error, as when
-/// [Logger.recordStackTraceAtLevel] adds one. By passing [omitError], you can
-/// omit printing the error and stack trace of a [LogRecord] that has either;
-/// its message is still printed. To drop whole records, filter the stream
-/// before it reaches [prettyLog] instead.
+/// package:logging's [recordStackTraceAtLevel] adds one.
+///
+/// [omitError] decides whether to hide the error of a [LogRecord] that has
+/// one, and [omitStackTrace] whether to hide the stack trace of one that has
+/// one. Each is only called when there is something for it to hide, and the
+/// record's message is always printed. To drop whole records, filter the
+/// stream before it reaches [prettyLog].
 ///
 /// The whole record is passed to [printFunction] in one call, so a print
 /// function that writes each call as its own log entry keeps the record
@@ -19,6 +24,7 @@ import 'package:io/ansi.dart';
 void prettyLog(
   LogRecord record, {
   bool Function(LogRecord)? omitError,
+  bool Function(LogRecord)? omitStackTrace,
   void Function(String)? printFunction,
   AnsiCode Function(Level)? logColorChooser,
 }) {
@@ -26,28 +32,34 @@ void prettyLog(
   printFunction ??= print;
 
   var parts = [record.toString()];
-  var omitted =
-      (record.error != null || record.stackTrace != null) &&
-      (omitError?.call(record) ?? false);
-  if (!omitted) {
-    if (record.error != null) {
-      parts.add(record.error.toString());
-    }
-    if (record.stackTrace != null) {
-      parts.add(record.stackTrace.toString());
-    }
+  if (record.error != null && !(omitError?.call(record) ?? false)) {
+    parts.add(record.error.toString());
+  }
+  if (record.stackTrace != null && !(omitStackTrace?.call(record) ?? false)) {
+    parts.add(record.stackTrace.toString());
   }
 
   var code = logColorChooser(record.level);
   printFunction(
     parts
-        .expand((part) => part.split(_lineBreakRgx))
-        .map((line) => code.wrap(line) ?? line)
+        .expand(_lines)
+        // An empty line is left uncolored, so it is not bare color codes.
+        .map((line) => line.isEmpty ? line : code.wrap(line) ?? line)
         .join('\n'),
   );
 }
 
-final _lineBreakRgx = RegExp(r'\r?\n');
+/// Splits [part] on `\n`, `\r\n` and a lone `\r`, and drops trailing empty
+/// lines, such as the newline a stack trace ends with, so no blank line
+/// follows. A part with no text, such as an empty error, is one empty line, so
+/// it still shows.
+List<String> _lines(String part) {
+  var lines = LineSplitter.split(part).toList();
+  while (lines.isNotEmpty && lines.last.isEmpty) {
+    lines.removeLast();
+  }
+  return lines.isEmpty ? [''] : lines;
+}
 
 /// Chooses a color based on the logger [level].
 ///

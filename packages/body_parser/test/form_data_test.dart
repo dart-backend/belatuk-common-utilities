@@ -264,6 +264,13 @@ café
 
     jsons = await postField(latin1Cafe, charset: 'iso-8859-1');
     expect(jsons['error'], contains('Unsupported charset'));
+
+    jsons = await postField(ascii.encode('cafe'), charset: 'us-ascii');
+    expect(jsons['error'], isNull);
+    expect(jsons['body']['a'], equals('cafe'));
+
+    jsons = await postField(cafe, charset: 'us-ascii');
+    expect(jsons['error'], contains('FormatException'));
   });
 
   test('Part with bad headers fails the request', () async {

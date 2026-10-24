@@ -4,28 +4,31 @@
 
 ### Breaking changes in 6.0.0
 
-* **Breaking:** A multipart text field's value is no longer split on `&` and `=` or URL-decoded, so `+` stays a `+` and `%XX` is not decoded. Values are still converted the same way as URL-encoded values: numbers become `num`, `null` becomes `null`, and JSON arrays and objects are decoded.
-* **Breaking:** Only UTF-8 is accepted for text. A JSON or URL-encoded body, or a multipart text field, whose `Content-Type` declares a charset other than UTF-8 or US-ASCII fails the parse with a `FormatException`, as does text or a percent-escape that is not valid UTF-8. Before, a multipart text field was decoded with its declared charset, and the `charset` of a JSON or URL-encoded body was ignored.
-* **Breaking:** Keys that conflict fail the parse with a `FormatException`, instead of one value silently replacing the other. Examples are `user.name` with `user`, `tags[]` with `tags`, and `a.b` with `a.b.c`, in either order. A repeated plain key such as `a=1&a=2` still keeps the last value.
-* **Breaking:** The query string is parsed for every request (see below), and an error in it fails the whole request: `error` is set and the body is not parsed.
-* **Breaking:** A key without `=`, such as `?debug`, follows the same rules as other keys, so `flags[]` gives `flags: [true]` and `opts.debug` gives `opts: {debug: true}`.
-* **Breaking:** A value becomes a number only when it is a plain decimal that converts exactly: an optional `-`, no leading zeros, and an optional fraction, such as `42`, `-7` or `14.5`. Anything else stays a string, including `01234`, `+15551234567`, `1e3`, `0x1F`, numbers with surrounding spaces, `Infinity`, integers too large for an `int`, and decimals with more than 15 significant digits. Before, `num.parse` converted all of these, so leading zeros and precision were lost.
-* **Breaking:** A dotted key ending in `[]`, such as `user.tags[]`, appends to a list inside the nested map, giving `user: {tags: [...]}`. Before, it was stored under the literal key `"user.tags"`.
-* **Breaking:** A multipart text field without a `name` is dropped, instead of being stored under the key `"null"`.
+* **Breaking:** Multipart text fields are no longer URL-decoded or split on `&` and `=`, so `+` and `%XX` are kept as sent.
+* **Breaking:** Only UTF-8 and US-ASCII text is accepted. Any other declared charset, or bytes that are not valid for the charset, fail the parse with a `FormatException`. Before, a multipart text field was decoded with its declared charset, and the charset of a JSON or URL-encoded body was ignored.
+* **Breaking:** Conflicting keys, such as `user` with `user.name` or `tags` with `tags[]`, fail the parse with a `FormatException`. A repeated plain key still keeps the last value, and a JSON value counts as a plain value, so `a={"x":1}` with `a.y` is a conflict.
+* **Breaking:** The query string is parsed for every request, and an error in it fails the request without parsing the body.
+* **Breaking:** Only plain decimals that convert exactly become numbers, such as `42`, `-7` or `14.5`. Values such as `01234`, `+1555`, `1e3`, `0x1F` and `Infinity` stay strings, as do integers too large for an `int` and decimals with more than 15 significant digits or outside the range of a double. `-0` and `-0.0` lose their sign.
+* **Breaking:** A dotted list key such as `user.tags[]` is nested, giving `user: {tags: [...]}`.
+* **Breaking:** A key without `=` follows the same rules as other keys, so `?opts.debug` gives `opts: {debug: true}`.
+* **Breaking:** A multipart text field without a `name` is dropped.
+* **Breaking:** When the parse fails, `body` and `files` are empty instead of holding whatever was parsed before the error.
+
+### New in 6.0.0
+
+* No longer depends on `belatuk_http_server`.
 
 ### Fixes in 6.0.0
 
-* **Multipart:** A field value containing `&` and `=` can no longer add extra fields to the body, and a value containing `%` no longer makes the whole parse fail.
-* **Multipart:** An uploaded file's bytes are stored exactly as sent. Before, files sent as text or without a `Content-Type` were decoded as text first, so non-ASCII characters were corrupted, a byte-order mark was dropped, and bytes that were not valid UTF-8 made the whole parse fail.
-* **Multipart:** An uploaded file without a `Content-Type` header is given the MIME type `text/plain`, instead of throwing a null-check error that discarded every field and file in the request.
-* **URL-encoded:** A `%` that does not start an escape, as in `discount=100%`, is kept as is in URL-encoded bodies and query strings, instead of making the whole parse fail. Raw non-ASCII characters, as in `name=café`, are also kept instead of failing the parse.
-* **Query:** The query string is parsed into `query` for every request. Before, it was only parsed when the request had no `Content-Type`, so a request with a JSON, URL-encoded or multipart body always got an empty `query`.
-* **Query and URL-encoded:** An empty pair, from an empty query (`/path?`), a trailing `&` or `&&`, is skipped instead of being stored as `"": true`.
-* **Values:** A value that starts and ends with brackets or braces but is not valid JSON, such as `[draft]`, is kept as a string instead of making the whole parse fail. This applies to URL-encoded bodies and query strings as well as multipart fields.
-
-### Other changes in 6.0.0
-
-* No longer depends on `belatuk_http_server`. Multipart part headers are read directly.
+* **Multipart:** Uploaded files are stored byte for byte, and a file without a `Content-Type` gets `text/plain` instead of failing the parse.
+* **Multipart:** A body cut off part-way fails the parse instead of hanging forever.
+* **Multipart:** A field value containing `&`, `=` or `%` no longer adds fields or fails the parse.
+* **URL-encoded:** A stray `%` or a raw non-ASCII character is kept instead of failing the parse.
+* **URL-encoded:** Empty pairs, as in `/path?` or `a=1&&b=2&`, are skipped instead of stored as `"": true`.
+* **Query:** The query string is parsed even when the request has a body.
+* **JSON:** A body that is not an object, such as `null` or `[]`, fails with a `FormatException`.
+* **Body:** When a bad query string fails a JSON, URL-encoded or multipart request, or a multipart part has bad headers or content, the rest of the body is still read, so it does not stall the connection. A multipart body that is broken, such as one with a bad boundary or cut off part-way, stops the parse, and the rest of it is not read.
+* **Values:** Text that only looks like JSON, such as `[draft]`, stays a string instead of failing the parse.
 
 ## 5.6.0
 

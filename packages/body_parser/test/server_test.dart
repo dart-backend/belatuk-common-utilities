@@ -231,6 +231,19 @@ void main() {
       }
     });
 
+    test('US-ASCII body with non-ASCII bytes is rejected', () async {
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded; charset=us-ascii',
+        },
+        body: utf8.encode('name=café'),
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], contains('FormatException'));
+      expect(result['body'], equals({}));
+    });
+
     test('Stray percent is kept', () async {
       var response = await client!.post(
         Uri.parse(url!),
@@ -254,6 +267,11 @@ void main() {
         'tags[]=y&tags=x',
         'items[]=1&items.count=2',
         'user.name=x&user',
+        'a={"x":1}&a.y=2',
+        'a=[1]&a[]=2',
+        'a[]=1&a=[2]',
+        'a=null&a.b=1',
+        'a=null&a[]=1',
       ]) {
         var response = await client!.post(
           Uri.parse(url!),
@@ -299,7 +317,9 @@ void main() {
       var response = await client!.post(
         Uri.parse(url!),
         headers: headers,
-        body: 'a=1&a=2&flags[]&opts.debug&user.name=x&user.name=y',
+        body:
+            'a=1&a=2&flags[]&opts.debug&user.name=x&user.name=y'
+            '&j=[1]&j=[2]&o={"x":1}&o={"x":2}',
       );
       var result = json.decode(response.body);
       expect(result['error'], isNull);
@@ -310,6 +330,8 @@ void main() {
           'flags': [true],
           'opts': {'debug': true},
           'user': {'name': 'y'},
+          'j': [2],
+          'o': {'x': 2},
         }),
       );
     });
@@ -317,6 +339,23 @@ void main() {
 
   group('json', () {
     var headers = <String, String>{'content-type': 'application/json'};
+    test('Body that is not an object is rejected', () async {
+      for (var body in ['null', '[]', '42', '"x"']) {
+        var response = await client!.post(
+          Uri.parse(url!),
+          headers: headers,
+          body: body,
+        );
+        var result = json.decode(response.body);
+        expect(
+          result['error'],
+          equals('FormatException: A JSON body must be an object'),
+          reason: body,
+        );
+        expect(result['originalBuffer'], equals(utf8.encode(body)));
+      }
+    });
+
     test('Post Simple', () async {
       var postData = json.encode({'hello': 'world'});
       print('Body: $postData');

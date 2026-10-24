@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'get_value.dart';
 
 /// Parses a URI-encoded string into real data! **Wow!**
@@ -49,15 +51,41 @@ void setValueFromKey(Map map, String key, String value) {
   _setValue(map, key, getValue(value));
 }
 
+/// A map built from dotted keys, as opposed to one decoded from JSON.
+class _KeyMap extends MapView<dynamic, dynamic> {
+  _KeyMap() : super(<dynamic, dynamic>{});
+}
+
+/// A list built from `[]` keys, as opposed to one decoded from JSON.
+class _KeyList extends ListBase<dynamic> {
+  final _list = <dynamic>[];
+
+  @override
+  int get length => _list.length;
+
+  @override
+  set length(int length) => _list.length = length;
+
+  @override
+  dynamic operator [](int index) => _list[index];
+
+  @override
+  void operator []=(int index, dynamic value) => _list[index] = value;
+
+  @override
+  void add(dynamic element) => _list.add(element);
+}
+
 void _setValue(Map map, String key, dynamic value) {
   // i.e. map.foo.bar => [map, foo, bar]
   var keys = key.split('.');
   var targetMap = map;
   for (var i = 0; i < keys.length - 1; i++) {
+    // A key holding null still conflicts, so check for the key, not the value.
     var next = targetMap[keys[i]];
-    if (next == null) {
-      next = targetMap[keys[i]] = {};
-    } else if (next is! Map) {
+    if (!targetMap.containsKey(keys[i])) {
+      next = targetMap[keys[i]] = _KeyMap();
+    } else if (next is! _KeyMap) {
       throw _conflict(key);
     }
     targetMap = next;
@@ -68,17 +96,17 @@ void _setValue(Map map, String key, dynamic value) {
   if (arrayMatch != null) {
     var listKey = arrayMatch[1]!;
     var list = targetMap[listKey];
-    if (list == null) {
-      list = targetMap[listKey] = [];
-    } else if (list is! List) {
+    if (!targetMap.containsKey(listKey)) {
+      list = targetMap[listKey] = _KeyList();
+    } else if (list is! _KeyList) {
       throw _conflict(key);
     }
     list.add(value);
   } else {
-    // A repeated plain key replaces the earlier value, but a list or map
-    // built from other keys is never replaced.
+    // A repeated plain key replaces the earlier value, including a JSON
+    // value, but a list or map built from other keys is never replaced.
     var existing = targetMap[keys.last];
-    if (existing is List || existing is Map) {
+    if (existing is _KeyMap || existing is _KeyList) {
       throw _conflict(key);
     }
     targetMap[keys.last] = value;

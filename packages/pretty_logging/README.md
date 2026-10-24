@@ -1,4 +1,4 @@
-# Belatuk Petty Logging
+# Belatuk Pretty Logging
 
 ![Pub Version (including pre-releases)](https://img.shields.io/pub/v/belatuk_pretty_logging?include_prereleases)
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
@@ -13,7 +13,7 @@ In your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  belatuk_pretty_logging: ^6.5.0
+  belatuk_pretty_logging: ^7.0.0
 ```
 
 ## Usage
@@ -27,13 +27,23 @@ myLogger.onRecord.listen(prettyLog);
 However, you can conditionally pass logic to omit printing an error, provide colors, or to provide a custom print function:
 
 ```dart
-var pretty = prettyLog(
-  logColorChooser: (_) => red,
-  printFunction: stderr.writeln,
-  omitError: (r) {
-    var err = r.error;
-    return err is AngelHttpException && err.statusCode != 500;
-  },
+import 'dart:io';
+
+import 'package:angel3_framework/angel3_framework.dart';
+import 'package:belatuk_pretty_logging/belatuk_pretty_logging.dart';
+import 'package:io/ansi.dart';
+
+myLogger.onRecord.listen(
+  (record) => prettyLog(
+    record,
+    logColorChooser: (_) => red,
+    printFunction: stderr.writeln,
+    omitError: (r) {
+      var err = r.error;
+      return err is AngelHttpException && err.statusCode != 500;
+    },
+  ),
 );
-myLogger.onRecord.listen(pretty);
 ```
+
+`omitError` is only asked about records that have an error. Returning `true` hides the error and stack trace; the record's message is still printed.

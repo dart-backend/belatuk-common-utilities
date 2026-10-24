@@ -3,8 +3,16 @@ import 'package:io/ansi.dart';
 
 /// Prints the contents of a [LogRecord] with pretty colors.
 ///
-/// By passing [omitError], you can omit printing the error of a given
-/// [LogRecord].
+/// The record's error and stack trace, if any, follow the message on their own
+/// lines. A stack trace is printed even when there is no error, as when
+/// [Logger.recordStackTraceAtLevel] adds one. By passing [omitError], you can
+/// omit printing the error and stack trace of a [LogRecord] that has an
+/// error; its message is still printed.
+///
+/// The whole record is passed to [printFunction] in one call, so a print
+/// function that writes each call as its own log entry keeps the record
+/// together. Each line is colored on its own, so the color survives tools
+/// that read the output line by line.
 ///
 /// You can also pass a custom [printFunction] or [logColorChooser].
 void prettyLog(
@@ -14,41 +22,43 @@ void prettyLog(
   AnsiCode Function(Level)? logColorChooser,
 }) {
   logColorChooser ??= chooseLogColor;
-  omitError ??= (_) => false;
   printFunction ??= print;
 
-  var code = logColorChooser(record.level);
-  if (record.error == null) {
-    printFunction(code.wrap(record.toString()) ?? "");
-  }
-
-  if (record.error != null) {
-    var err = record.error;
-    if (omitError(record)) return;
-    printFunction(code.wrap('$record\n') ?? "");
-    printFunction(code.wrap(err.toString()) ?? "");
-
+  var parts = [record.toString()];
+  var omitted = record.error != null && (omitError?.call(record) ?? false);
+  if (!omitted) {
+    if (record.error != null) {
+      parts.add(record.error.toString());
+    }
     if (record.stackTrace != null) {
-      printFunction(code.wrap(record.stackTrace.toString()) ?? "");
+      parts.add(record.stackTrace.toString());
     }
   }
+
+  var code = logColorChooser(record.level);
+  printFunction(
+    parts
+        .expand((part) => part.split('\n'))
+        .map((line) => code.wrap(line) ?? line)
+        .join('\n'),
+  );
 }
 
 /// Chooses a color based on the logger [level].
+///
+/// Levels are compared by value, so a custom level gets the color of the
+/// nearest built-in level at or below it. [Level.OFF] is not colored.
 AnsiCode chooseLogColor(Level level) {
-  if (level == Level.SHOUT) {
+  if (level == Level.OFF) {
+    return resetAll;
+  } else if (level >= Level.SHOUT) {
     return backgroundRed;
-  } else if (level == Level.SEVERE) {
+  } else if (level >= Level.SEVERE) {
     return red;
-  } else if (level == Level.WARNING) {
+  } else if (level >= Level.WARNING) {
     return yellow;
-  } else if (level == Level.INFO) {
+  } else if (level >= Level.INFO) {
     return cyan;
-  } else if (level == Level.CONFIG ||
-      level == Level.FINE ||
-      level == Level.FINER ||
-      level == Level.FINEST) {
-    return lightGray;
   }
-  return resetAll;
+  return lightGray;
 }

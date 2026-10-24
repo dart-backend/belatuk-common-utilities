@@ -1,5 +1,20 @@
 # Change Log
 
+## 7.0.0
+
+### Breaking changes in 7.0.0
+
+* **Breaking:** When `omitError` returns `true`, the record's message is printed and only its error and stack trace are hidden, as the doc comment said. Before, the whole record was dropped, so there is no longer a way to drop a record with `omitError`.
+* **Breaking:** A record, with its error and stack trace, is passed to `printFunction` in one call, with its lines joined by newlines. Before, the message, error and stack trace were separate calls, so a print function that prefixes each call now prefixes only the first line.
+* **Breaking:** `chooseLogColor` colors levels by value, so a custom level gets the color of the nearest built-in level at or below it, such as red for `Level('CRITICAL', 1100)`, instead of none. `Level.ALL` is now light gray; `Level.OFF` is still not colored.
+
+### Fixes in 7.0.0
+
+* **prettyLog:** A record with an error no longer prints an extra blank line after its message.
+* **prettyLog:** A stack trace is printed even when the record has no error, as when `Logger.recordStackTraceAtLevel` adds one.
+* **prettyLog:** Each line of a record is colored on its own, so the color survives tools that read output line by line, and a cut-off view cannot leave the color on.
+* **Docs:** The README's advanced example now compiles and shows its imports, and the title is spelled correctly.
+
 ## 6.5.0
 
 * Require Dart >= 3.13

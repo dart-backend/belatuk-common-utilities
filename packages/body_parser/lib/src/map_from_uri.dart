@@ -79,6 +79,18 @@ class _KeyList extends ListBase<dynamic> {
 void _setValue(Map map, String key, dynamic value) {
   // i.e. map.foo.bar => [map, foo, bar]
   var keys = key.split('.');
+
+  // Every segment needs a name, and only the last can be a list, since lists
+  // of maps are not supported.
+  for (var i = 0; i < keys.length; i++) {
+    var segment = keys[i];
+    if (segment.isEmpty ||
+        segment == '[]' ||
+        (i < keys.length - 1 && segment.endsWith('[]'))) {
+      throw FormatException('Key "$key" is not valid');
+    }
+  }
+
   var targetMap = map;
   for (var i = 0; i < keys.length - 1; i++) {
     // A key holding null still conflicts, so check for the key, not the value.

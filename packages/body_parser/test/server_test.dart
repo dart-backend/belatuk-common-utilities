@@ -258,6 +258,21 @@ void main() {
       );
     });
 
+    test('Keys with empty or misplaced segments are rejected', () async {
+      for (var body in ['a.=1', '.a=1', 'a..b=1', 'a[].b=1', 'a.[]=1', '=1']) {
+        var response = await client!.post(
+          Uri.parse(url!),
+          headers: headers,
+          body: body,
+        );
+        expect(
+          json.decode(response.body)['error'],
+          contains('is not valid'),
+          reason: body,
+        );
+      }
+    });
+
     test('Conflicting keys are rejected', () async {
       for (var body in [
         'user=bob&user.name=x',

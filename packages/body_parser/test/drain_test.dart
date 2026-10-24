@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:belatuk_body_parser/belatuk_body_parser.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -123,9 +124,80 @@ void main() {
         storeOriginalBuffer: store,
       );
       expect(result.error, isNotNull);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
       expect(result.body, isEmpty, reason: 'storeOriginalBuffer: $store');
       expect(result.files, isEmpty);
     }
+  });
+
+  test('Malformed part header fails the parse instead of hanging', () async {
+    var result = await parseBodyFromStream(
+      body(['--B\r\nBad Header: x\r\n\r\nv\r\n', '--B--\r\n']),
+      MediaType('multipart', 'form-data', {'boundary': 'B'}),
+      Uri.parse('/'),
+    ).timeout(const Duration(seconds: 2));
+    expect(result.error, isA<MimeMultipartException>());
+    expect(result.body, isEmpty);
+  });
+
+  test('Failed query string keeps no partial query', () async {
+    var result = await parseBodyFromStream(
+      body([]),
+      null,
+      Uri.parse('/?a=1&b=%E9'),
+    );
+    expect(result.error, isA<FormatException>());
+    expect(result.query, isEmpty);
+  });
+
+  test('Rejected JSON body is still read to the end', () async {
+    for (var (chunks, charset) in [
+      (
+        [
+          [0x7B, 0x22, 0x61, 0x22, 0x3A],
+          [0x22, 0xE9, 0x22, 0x7D],
+        ],
+        null,
+      ),
+      ([utf8.encode('{"a":'), utf8.encode('1}')], 'iso-8859-1'),
+    ]) {
+      var done = false;
+      Stream<Uint8List> bytes() async* {
+        for (var chunk in chunks) {
+          yield Uint8List.fromList(chunk);
+        }
+        done = true;
+      }
+
+      var result = await parseBodyFromStream(
+        bytes(),
+        MediaType('application', 'json', {'charset': ?charset}),
+        Uri.parse('/'),
+      );
+      expect(result.error, isA<FormatException>(), reason: charset);
+      expect(done, isTrue, reason: charset);
+    }
+  });
+
+  test('Escaped quotes and newlines in field names are decoded', () async {
+    var boundary = 'myBoundary';
+    var result = await parseBodyFromStream(
+      body([
+        '--$boundary\r\n'
+            'Content-Disposition: form-data; name="a%22b%0D%0Ac"\r\n\r\n1\r\n',
+        '--$boundary\r\n'
+            'Content-Disposition: form-data; name="p%25"\r\n\r\n2\r\n',
+        '--$boundary\r\n'
+            'Content-Disposition: form-data; name="f%22"; '
+            'filename="x%22.txt"\r\n\r\nfile\r\n',
+        '--$boundary--\r\n',
+      ]),
+      MediaType('multipart', 'form-data', {'boundary': boundary}),
+      Uri.parse('/'),
+    );
+    expect(result.error, isNull);
+    expect(result.body, equals({'a"b\r\nc': 1, 'p%25': 2}));
+    expect(result.files.single.name, equals('f"'));
+    expect(result.files.single.filename, equals('x".txt'));
   });
 }

@@ -45,8 +45,6 @@ Body Parser exposes a simple class called `BodyParseResult`. You can easily pars
   }
   ```
 
-You can also use `buildMapFromUri(Map, String)` to populate a map from a URL encoded string.
-
 This can easily be used with a library like [Belatuk JSON Serializer](https://pub.dev/packages/belatuk_json_serializer) to build structured JSON/REST APIs. Add validation and you've got an instant backend.
 
   ```dart

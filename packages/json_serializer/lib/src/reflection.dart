@@ -17,10 +17,12 @@ List<Symbol> _findGetters(ClassMirror classMirror) {
     Symbol symbol,
     MethodMirror methodMirror,
   ) {
+    // Private getters, such as a `_cache`, are internal state, not data.
     if (methodMirror.isGetter &&
+        !methodMirror.isPrivate &&
         symbol != hashCodeSymbol &&
         symbol != runtimeTypeSymbol) {
-      logger.info("Found getter on instance: $symbol");
+      logger.finest(() => "Found getter on instance: $symbol");
       result.add(symbol);
     }
   });
@@ -29,49 +31,82 @@ List<Symbol> _findGetters(ClassMirror classMirror) {
 }
 
 dynamic serialize(dynamic value, Serializer serializer) {
-  logger.info("Serializing this value via reflection: $value");
+  logger.finest(() => "Serializing this value via reflection: $value");
   Map result = {};
   InstanceMirror instanceMirror = reflect(value);
   ClassMirror classMirror = instanceMirror.type;
 
   // Check for toJson
-  for (Symbol symbol in classMirror.instanceMembers.keys) {
-    if (symbol == #toJson) {
-      logger.info("Running toJson...");
-      var result = instanceMirror.invoke(symbol, []).reflectee;
-      logger.info("Result of serialization via reflection: $result");
-      return result;
-    }
+  if (classMirror.instanceMembers.containsKey(#toJson)) {
+    logger.finest(() => "Running toJson...");
+    var result = instanceMirror.invoke(#toJson, []).reflectee;
+    logger.finest(() => "Result of serialization via reflection: $result");
+    return result;
   }
 
+  // A getter that throws, or a value that cannot be serialized, fails the
+  // whole call, so a field is never silently left out of the output.
   for (Symbol symbol in _findGetters(classMirror)) {
     String name = MirrorSystem.getName(symbol);
-    var valueForSymbol = instanceMirror.getField(symbol).reflectee;
 
     try {
+      var valueForSymbol = instanceMirror.getField(symbol).reflectee;
       result[name] = serializer(valueForSymbol);
-      logger.info("Set $name to $valueForSymbol");
+      logger.finest(() => "Set $name to $valueForSymbol");
     } catch (e, st) {
-      logger.severe("Could not set $name to $valueForSymbol", e, st);
+      logger.severe("Could not serialize field $name.", e, st);
+      rethrow;
     }
   }
 
-  logger.info("Result of serialization via reflection: $result");
+  logger.finest(() => "Result of serialization via reflection: $result");
 
   return result;
 }
 
+/// Whether [type] puts no constraint on a value, so it needs no conversion.
+bool _isUntyped(TypeMirror type) =>
+    type == currentMirrorSystem().dynamicType ||
+    !type.hasReflectedType ||
+    type.reflectedType == Object ||
+    type.reflectedType == _nullableObject;
+
+final Type _nullableObject = _typeOf<Object?>();
+
+Type _typeOf<T>() => T;
+
+/// Whether [type] is [target], ignoring nullability and type arguments.
+bool _isClass(TypeMirror type, Type target) =>
+    type is ClassMirror && type.originalDeclaration == reflectClass(target);
+
+/// Converts a JSON scalar to [outputType] where JSON has no exact match: an
+/// ISO 8601 string to a [DateTime], as [serialize] writes it, and an [int] to
+/// a [double], since JSON does not tell `1` and `1.0` apart.
+dynamic _deserializeScalar(dynamic value, TypeMirror outputType) {
+  if (value is String && _isClass(outputType, DateTime)) {
+    return DateTime.parse(value);
+  } else if (value is int && _isClass(outputType, double)) {
+    return value.toDouble();
+  }
+  return value;
+}
+
 dynamic deserialize(dynamic value, Type outputType, Deserializer deserializer) {
-  logger.info("About to deserialize $value to a $outputType");
+  logger.finest(() => "About to deserialize $value to a $outputType");
 
   try {
-    if (value is List) {
-      List<TypeMirror> typeArguments = reflectType(outputType).typeArguments;
+    var outputMirror = reflectType(outputType);
+    if (value == null || _isUntyped(outputMirror)) {
+      return deserializer(value);
+    } else if (value is List) {
+      List<TypeMirror> typeArguments = outputMirror.typeArguments;
 
       Iterable it;
 
-      if (typeArguments.isEmpty) {
-        it = value.map(deserializer);
+      // A list with no element type, or `dynamic` or `Object` elements, as in
+      // a field declared as `List items`, keeps its elements as they decode.
+      if (typeArguments.isEmpty || _isUntyped(typeArguments[0])) {
+        return value.map(deserializer).toList();
       } else {
         it = value.map(
           (item) =>
@@ -79,16 +114,16 @@ dynamic deserialize(dynamic value, Type outputType, Deserializer deserializer) {
         );
       }
 
-      if (typeArguments.isEmpty) return it.toList();
-      logger.info(
-        'Casting list elements to ${typeArguments[0].reflectedType} via List.from',
+      logger.finest(
+        () =>
+            'Casting list elements to ${typeArguments[0].reflectedType} via List.from',
       );
 
       var mirror = reflectType(List, [typeArguments[0].reflectedType]);
 
       if (mirror is ClassMirror) {
         var output = mirror.newInstance(#from, [it]).reflectee;
-        logger.info('Casted list type: ${output.runtimeType}');
+        logger.finest(() => 'Casted list type: ${output.runtimeType}');
         return output;
       } else {
         throw ArgumentError(
@@ -98,7 +133,7 @@ dynamic deserialize(dynamic value, Type outputType, Deserializer deserializer) {
     } else if (value is Map) {
       return _deserializeFromJsonByReflection(value, deserializer, outputType);
     } else {
-      return deserializer(value);
+      return _deserializeScalar(deserializer(value), outputMirror);
     }
   } catch (e, st) {
     logger.severe('Deserialization failed.', e, st);
@@ -122,22 +157,16 @@ dynamic _deserializeFromJsonByReflection(
   var type = typeMirror;
   var fromJson = Symbol('${MirrorSystem.getName(type.simpleName)}.fromJson');
 
-  for (Symbol symbol in type.declarations.keys) {
-    if (symbol == fromJson) {
-      var decl = type.declarations[symbol];
+  var decl = type.declarations[fromJson];
+  if (decl is MethodMirror && decl.isConstructor) {
+    logger.finest(() => "Running fromJson...");
+    var result = type.newInstance(#fromJson, [data]).reflectee;
 
-      if (decl is MethodMirror && decl.isConstructor) {
-        logger.info("Running fromJson...");
-        var result = type.newInstance(#fromJson, [data]).reflectee;
-
-        logger.info("Result of deserialization via reflection: $result");
-        return result;
-      }
-    }
+    logger.finest(() => "Result of deserialization via reflection: $result");
+    return result;
   }
 
   ClassMirror classMirror = type;
-  InstanceMirror instanceMirror = classMirror.newInstance(Symbol(""), []);
 
   if (classMirror.isSubclassOf(reflectClass(Map))) {
     var typeArguments = classMirror.typeArguments;
@@ -152,38 +181,56 @@ dynamic _deserializeFromJsonByReflection(
         Map,
         typeArguments.map((t) => t.reflectedType).toList(),
       ) as ClassMirror;
-      logger.info('Casting this map $data to Map of [$typeArguments]');
+      logger.finest(() => 'Casting this map $data to Map of [$typeArguments]');
       var output = mapType.newInstance(Symbol(''), []).reflectee;
 
+      // Each value is converted to the map's value type, so a JSON object
+      // read as `Map<String, Foo>` holds `Foo` instances, not raw maps.
+      var valueType = typeArguments.length == 2 ? typeArguments[1] : null;
       for (var key in data.keys) {
-        output[key] = data[key];
+        output[key] = valueType == null || _isUntyped(valueType)
+            ? deserializer(data[key])
+            : deserializer(data[key], outputType: valueType.reflectedType);
       }
 
-      logger.info('Output: $output of type ${output.runtimeType}');
+      logger.finest(() => 'Output: $output of type ${output.runtimeType}');
       return output;
     }
   } else {
-    data.keys.forEach((key) {
+    InstanceMirror instanceMirror;
+    try {
+      instanceMirror = classMirror.newInstance(Symbol(""), []);
+    } on NoSuchMethodError {
+      throw ArgumentError(
+        '$outputType cannot be deserialized: it needs a constructor that takes '
+        'no arguments, or a fromJson constructor.',
+      );
+    }
+
+    for (var key in data.keys) {
+      // A key with no matching setter, such as an extra field in the JSON, is
+      // skipped on purpose. Any other error setting a field is thrown, so the
+      // caller never gets a half-filled object.
+      var setter = classMirror.instanceMembers[Symbol('$key=')];
+      if (setter == null) {
+        logger.finest(() => "Skipping $key, which has no setter.");
+        continue;
+      }
+
       try {
-        logger.info("Now deserializing value for $key");
-        logger.info("data[\"$key\"] = ${data[key]}");
+        logger.finest(() => "Now deserializing value for $key");
+        logger.finest(() => "data[\"$key\"] = ${data[key]}");
         var deserializedValue = deserializer(data[key]);
 
-        logger.info(
-          "I want to set $key to the following ${deserializedValue.runtimeType}: $deserializedValue",
+        logger.finest(
+          () =>
+              "I want to set $key to the following ${deserializedValue.runtimeType}: $deserializedValue",
         );
-        // Get target type of getter
-        Symbol searchSymbol = Symbol(key.toString());
-        Symbol symbolForGetter = classMirror.instanceMembers.keys.firstWhere(
-          (x) => x == searchSymbol,
-        );
-        Type requiredType = classMirror
-            .instanceMembers[symbolForGetter]!
-            .returnType
-            .reflectedType;
+        // Get target type of the setter's parameter
+        Type requiredType = setter.parameters.first.type.reflectedType;
         if (data[key].runtimeType != requiredType) {
-          logger.info("Currently, $key is a ${data[key].runtimeType}.");
-          logger.info("However, $key must be a $requiredType.");
+          logger.finest(() => "Currently, $key is a ${data[key].runtimeType}.");
+          logger.finest(() => "However, $key must be a $requiredType.");
 
           deserializedValue = deserializer(
             deserializedValue,
@@ -191,17 +238,19 @@ dynamic _deserializeFromJsonByReflection(
           );
         }
 
-        logger.info(
-          "Final deserialized value for $key: $deserializedValue <${deserializedValue.runtimeType}>",
+        logger.finest(
+          () =>
+              "Final deserialized value for $key: $deserializedValue <${deserializedValue.runtimeType}>",
         );
         instanceMirror.setField(Symbol(key.toString()), deserializedValue);
 
-        logger.info("Success! $key has been set to $deserializedValue");
+        logger.finest(() => "Success! $key has been set to $deserializedValue");
       } catch (e, st) {
         logger.severe('Could not set value for field $key.', e, st);
+        rethrow;
       }
-    });
-  }
+    }
 
-  return instanceMirror.reflectee;
+    return instanceMirror.reflectee;
+  }
 }

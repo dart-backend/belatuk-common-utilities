@@ -25,6 +25,72 @@ void main() {
       'deserialize with schema validation',
       testDeserializationWithSchemaValidation,
     );
+
+    test('extra keys are skipped', () {
+      var result = god.deserialize(
+        '{"hello": "world", "extra": 1, "readOnly": 2}',
+        outputType: SampleClass,
+      );
+      expect(result, isA<SampleClass>());
+      expect((result as SampleClass).hello, equals('world'));
+    });
+
+    test('values are converted to their field types', () {
+      var result = god.deserialize(
+        '{"when": "2026-10-25T10:00:00.000Z", '
+        '"created": "2001-02-03T00:00:00.000", "price": 1, '
+        '"byName": {"a": {"bar": "x"}}, "items": [{"a": 1}, 2]}',
+        outputType: TypedSampleClass,
+      ) as TypedSampleClass;
+      expect(result.when, equals(DateTime.utc(2026, 10, 25, 10)));
+      expect(result.created, equals(DateTime(2001, 2, 3)));
+      expect(result.price, equals(1.0));
+      expect(result.price, isA<double>());
+      expect(result.byName['a'], isA<SampleNestedClass>());
+      expect(result.byName['a']!.bar, equals('x'));
+      expect(
+        result.items,
+        equals([
+          {'a': 1},
+          2,
+        ]),
+      );
+    });
+
+    test('serialize and deserialize round-trip', () {
+      var original = TypedSampleClass()
+        ..when = DateTime.utc(2026, 10, 25)
+        ..price = 2.5
+        ..byName = {'b': SampleNestedClass('y')};
+      var result = god.deserialize(
+        god.serialize(original),
+        outputType: TypedSampleClass,
+      ) as TypedSampleClass;
+      expect(result.when, equals(original.when));
+      expect(result.created, equals(original.created));
+      expect(result.price, equals(2.5));
+      expect(result.byName['b']!.bar, equals('y'));
+    });
+
+    test('a class with no no-argument constructor gives a clear error', () {
+      expect(
+        () => god.deserialize('{"name": "x"}', outputType: RequiredArgClass),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('constructor that takes no arguments'),
+          ),
+        ),
+      );
+    });
+
+    test('a field that cannot be set throws', () {
+      expect(
+        () => god.deserialize('{"hello": 42}', outputType: SampleClass),
+        throwsA(anything),
+      );
+    });
   });
 }
 

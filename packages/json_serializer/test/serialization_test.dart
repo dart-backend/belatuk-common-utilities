@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:belatuk_json_serializer/belatuk_json_serializer.dart' as god;
+import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 import 'shared.dart';
@@ -19,6 +20,58 @@ void main() {
     test('serialize lists', testSerializationOfLists);
 
     test('serialize via reflection', testSerializationViaReflection);
+
+    test('a getter that throws fails the call', () {
+      expect(
+        () => god.serialize(ThrowingGetterClass()),
+        throwsA(isA<StateError>()),
+      );
+      // One level down, the error used to be swallowed and the field left out.
+      expect(
+        () => god.serialize(NestedThrowingGetterClass()),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('private getters are left out', () {
+      expect(
+        json.decode(god.serialize(PrivateStateClass())),
+        equals({'visible': 'yes'}),
+      );
+    });
+
+    test('a cycle throws instead of overflowing the stack', () {
+      var parent = Node('p');
+      var child = Node('c')..parent = parent;
+      parent.children.add(child);
+      expect(() => god.serialize(parent), throwsA(isA<JsonCyclicError>()));
+
+      // The same object twice, without a cycle, is fine.
+      var shared = SampleNestedClass('x');
+      expect(
+        json.decode(god.serialize([shared, shared])),
+        equals([
+          {'bar': 'x'},
+          {'bar': 'x'},
+        ]),
+      );
+    });
+
+    test('non-string map keys become strings', () {
+      expect(
+        json.decode(god.serialize({1: 'a', DateTime.utc(2026): 'b'})),
+        equals({'1': 'a', '2026-01-01T00:00:00.000Z': 'b'}),
+      );
+    });
+
+    test('values are not logged at INFO', () {
+      var records = <LogRecord>[];
+      var sub = god.logger.onRecord.listen(records.add);
+      god.serialize(SampleNestedClass('secret'));
+      god.deserialize('{"bar": "secret"}', outputType: SampleNestedClass);
+      sub.cancel();
+      expect(records.where((r) => r.message.contains('secret')), isEmpty);
+    });
 
     test(
       'serialize with schema validation',

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:isolate';
 
 import 'package:belatuk_pub_sub/belatuk_pub_sub.dart';
 import 'package:belatuk_pub_sub/isolate.dart';
@@ -70,6 +71,24 @@ void main() {
       await sub.unsubscribe();
       expect(trustedClient.clientId, clientId);
     });
+    test('concurrent requests share one client id', () async {
+      var connection = _RawConnection(adapter.receivePort.sendPort);
+      await connection.connect();
+      connection.send('subscribe', '1', {'event_name': 'a'});
+      connection.send('subscribe', '2', {'event_name': 'b'});
+
+      var first = await connection.next();
+      var second = await connection.next();
+      expect(first['result']['client_id'], isNotNull);
+      expect(second['result']['client_id'], first['result']['client_id']);
+      await connection.close();
+    });
+  });
+
+  test('can publish a null value', () async {
+    var sub = await client2.subscribe('nullable');
+    await client1.publish('nullable', null);
+    expect(await sub.first, isNull);
   });
 
   test('subscribers receive published events', () async {
@@ -135,5 +154,114 @@ void main() {
         print('Expected exception was thrown: ${e.message}');
       }
     });
+
+    test(
+      'invalid requests get exactly one error and are not processed',
+      () async {
+        var connection = _RawConnection(adapter.receivePort.sendPort);
+        await connection.connect();
+
+        for (var method in ['publish', 'subscribe', 'unsubscribe']) {
+          connection.send(method, method, {});
+        }
+        // Responses arrive in order, so a second response to any of the
+        // requests above would arrive before this one.
+        connection.send('sentinel', 'sentinel', {});
+
+        for (var requestId in [
+          'publish',
+          'subscribe',
+          'unsubscribe',
+          'sentinel',
+        ]) {
+          var response = await connection.next();
+          expect(response['request_id'], requestId);
+          expect(response['status'], isFalse);
+        }
+        await connection.close();
+      },
+    );
+
+    test('a client without an ID can unsubscribe on its connection', () async {
+      var connection = _RawConnection(adapter.receivePort.sendPort);
+      await connection.connect();
+
+      connection.send('subscribe', 's', {'event_name': 'adhoc'});
+      var subscribed = await connection.next();
+      expect(subscribed['status'], isTrue);
+
+      connection.send('unsubscribe', 'u', {
+        'subscription_id': subscribed['result']['subscription_id'],
+      });
+      var unsubscribed = await connection.next();
+      expect(unsubscribed['request_id'], 'u');
+      expect(unsubscribed['status'], isTrue);
+      await connection.close();
+    });
+
+    test('closing the adapter reports its connections as closed', () async {
+      var adapter = IsolateAdapter()..start();
+      var disconnects = adapter.onDisconnect.toList();
+      var connection = _RawConnection(adapter.receivePort.sendPort);
+      await connection.connect();
+
+      await adapter.close();
+      expect(await disconnects, [connection.id]);
+      await connection.close();
+    });
+
+    test('a closed client\'s subscriptions are cancelled', () async {
+      var subscriber = IsolateClient(
+        'isolate_test::secret2',
+        adapter.receivePort.sendPort,
+      );
+      await subscriber.subscribe('gone');
+      await subscriber.close();
+
+      var publisher = _RawConnection(adapter.receivePort.sendPort);
+      await publisher.connect();
+      publisher.send('publish', 'p', {
+        'client_id': 'isolate_test::secret',
+        'event_name': 'gone',
+        'value': 1,
+      });
+      var response = await publisher.next();
+      expect(response['result'], containsPair('listeners', 0));
+      await publisher.close();
+    });
   });
+}
+
+/// A connection that sends raw messages to an [IsolateAdapter].
+class _RawConnection {
+  final SendPort server;
+  final ReceivePort _port = ReceivePort();
+  late final StreamIterator<Object?> _messages = StreamIterator(_port);
+  String? _id;
+
+  _RawConnection(this.server);
+
+  /// The connection ID the adapter assigned to this connection.
+  String? get id => _id;
+
+  Future<void> connect() async {
+    server.send(_port.sendPort);
+    _id = (await next())['id'] as String;
+  }
+
+  void send(String method, String requestId, Map<String, Object?> params) {
+    server.send(<String, Object?>{
+      'id': _id,
+      'request_id': requestId,
+      'method': method,
+      'params': params,
+    });
+  }
+
+  Future<Map> next() async {
+    if (!await _messages.moveNext()) throw StateError('Connection closed.');
+    return _messages.current as Map;
+  }
+
+  Future<void> close() => _messages.cancel();
 }

@@ -33,7 +33,7 @@ class IsolateClient extends Client {
     _clientId = clientId;
     receivePort.listen((data) {
       if (data is Map<String, Object?>) {
-        var (status, id, requestId, result, errorMessage) = MessageHandler()
+        var (status, id, requestId, result, errorMessage) = messageHandler
             .decodeResponseMessage(data);
 
         if (requestId != null) {
@@ -98,7 +98,7 @@ class IsolateClient extends Client {
       var requestId = _uuid.v4();
       _requests[requestId] = c;
       serverSendPort.send(
-        MessageHandler().encodePublishRequestMessage(
+        messageHandler.encodePublishRequestMessage(
           _id,
           requestId,
           clientId,
@@ -108,7 +108,7 @@ class IsolateClient extends Client {
       );
 
       return c.future.then((result) {
-        var (_, clientId) = MessageHandler().decodePublishResponseMessage(
+        var (_, clientId) = messageHandler.decodePublishResponseMessage(
           result as Map<String, Object?>,
         );
         _clientId = clientId;
@@ -123,7 +123,7 @@ class IsolateClient extends Client {
       var requestId = _uuid.v4();
       _requests[requestId] = c;
       serverSendPort.send(
-        MessageHandler().encodeSubscriptionRequestMessage(
+        messageHandler.encodeSubscriptionRequestMessage(
           _id,
           requestId,
           clientId,
@@ -132,7 +132,7 @@ class IsolateClient extends Client {
       );
 
       return c.future.then<ClientSubscription>((result) {
-        var (subcriptionId, clientId) = MessageHandler()
+        var (subcriptionId, clientId) = messageHandler
             .decodeSubscriptionResponseMessage(result as Map<String, Object?>);
         _clientId = clientId;
         var s = _IsolateClientSubscription(eventName, subcriptionId, this);
@@ -144,6 +144,9 @@ class IsolateClient extends Client {
 
   @override
   Future close() {
+    if (_id != null) {
+      serverSendPort.send(messageHandler.encodeDisconnectMessage(_id));
+    }
     receivePort.close();
 
     for (var c in _onConnect) {
@@ -208,7 +211,7 @@ class _IsolateClientSubscription extends ClientSubscription {
       var requestId = client._uuid.v4();
       client._requests[requestId] = c;
       client.serverSendPort.send(
-        MessageHandler().encodeUnsubscriptionRequestMessage(
+        messageHandler.encodeUnsubscriptionRequestMessage(
           client._id,
           requestId,
           client.clientId,

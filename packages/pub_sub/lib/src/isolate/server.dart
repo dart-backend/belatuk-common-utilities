@@ -15,6 +15,9 @@ class IsolateAdapter extends Adapter {
       StreamController<SubscriptionRequest>();
   final StreamController<UnsubscriptionRequest> _onUnsubscribe =
       StreamController<UnsubscriptionRequest>();
+  // Broadcast, so disconnects are not buffered when nothing listens.
+  final StreamController<String> _onDisconnect =
+      StreamController<String>.broadcast();
   final Uuid _uuid = Uuid();
 
   /// A [ReceivePort] on which to listen for incoming data.
@@ -30,12 +33,17 @@ class IsolateAdapter extends Adapter {
   Stream<UnsubscriptionRequest> get onUnsubscribe => _onUnsubscribe.stream;
 
   @override
+  Stream<String> get onDisconnect => _onDisconnect.stream;
+
+  @override
   Future close() {
     receivePort.close();
+    _clients.keys.forEach(_onDisconnect.add);
     _clients.clear();
     _onPublish.close();
     _onSubscribe.close();
     _onUnsubscribe.close();
+    _onDisconnect.close();
     return Future.value();
   }
 
@@ -45,11 +53,11 @@ class IsolateAdapter extends Adapter {
       if (data is SendPort) {
         var id = _uuid.v4();
         _clients[id] = data;
-        data.send(MessageHandler().encodeSendPortResponseMessage(id));
+        data.send(messageHandler.encodeSendPortResponseMessage(id));
       } else if (data is Map<String, Object?>) {
-        var (id, method, requestId, params) = MessageHandler()
+        var (id, method, requestId, params) = messageHandler
             .decodeRequestMessage(data);
-        var (clientId, eventName, subscriptionId, value) = MessageHandler()
+        var (clientId, eventName, subscriptionId, value) = messageHandler
             .decodeRequestParams(params);
 
         var sp = _clients[id];
@@ -58,9 +66,13 @@ class IsolateAdapter extends Adapter {
           return;
         }
 
-        if (method == 'publish') {
-          if (eventName == null || value == null) {
-            sp.send(MessageHandler().encodePublishResponseError(requestId));
+        if (method == 'disconnect') {
+          _clients.remove(id);
+          _onDisconnect.add(id);
+        } else if (method == 'publish') {
+          if (eventName == null) {
+            sp.send(messageHandler.encodePublishResponseError(requestId));
+            return;
           }
           var rq = _IsolatePublishRequestImpl(
             requestId,
@@ -68,13 +80,13 @@ class IsolateAdapter extends Adapter {
             eventName,
             value,
             sp,
+            id,
           );
           _onPublish.add(rq);
         } else if (method == 'subscribe') {
           if (eventName == null) {
-            sp.send(
-              MessageHandler().encodeSubscriptionResponseError(requestId),
-            );
+            sp.send(messageHandler.encodeSubscriptionResponseError(requestId));
+            return;
           }
           var rq = _IsolateSubscriptionRequestImpl(
             clientId,
@@ -82,27 +94,27 @@ class IsolateAdapter extends Adapter {
             sp,
             requestId,
             _uuid,
+            id,
           );
           _onSubscribe.add(rq);
         } else if (method == 'unsubscribe') {
           if (subscriptionId == null) {
             sp.send(
-              MessageHandler().encodeUnsubscriptionResponseError(requestId),
+              messageHandler.encodeUnsubscriptionResponseError(requestId),
             );
+            return;
           }
           var rq = _IsolateUnsubscriptionRequestImpl(
             clientId,
             subscriptionId,
             sp,
             requestId,
+            id,
           );
           _onUnsubscribe.add(rq);
         } else {
           sp.send(
-            MessageHandler().encodeUnknownMethodResponseError(
-              requestId,
-              method,
-            ),
+            messageHandler.encodeUnknownMethodResponseError(requestId, method),
           );
         }
       }
@@ -136,18 +148,22 @@ class _IsolatePublishRequestImpl extends PublishRequest {
 
   final String? requestId;
 
+  @override
+  final String connectionId;
+
   _IsolatePublishRequestImpl(
     this.requestId,
     this.clientId,
     this.eventName,
     this.value,
     this.sendPort,
+    this.connectionId,
   );
 
   @override
   void reject(String errorMessage) {
     sendPort.send(
-      MessageHandler().encodePublishResponseError(
+      messageHandler.encodePublishResponseError(
         requestId,
         errorMessage: errorMessage,
       ),
@@ -157,7 +173,7 @@ class _IsolatePublishRequestImpl extends PublishRequest {
   @override
   void accept(PublishResponse response) {
     sendPort.send(
-      MessageHandler().encodePublishResponseMessage2(
+      messageHandler.encodePublishResponseMessage(
         requestId,
         response.listeners,
         response.clientId,
@@ -179,18 +195,22 @@ class _IsolateSubscriptionRequestImpl extends SubscriptionRequest {
 
   final Uuid _uuid;
 
+  @override
+  final String connectionId;
+
   _IsolateSubscriptionRequestImpl(
     this.clientId,
     this.eventName,
     this.sendPort,
     this.requestId,
     this._uuid,
+    this.connectionId,
   );
 
   @override
   void reject(String errorMessage) {
     sendPort.send(
-      MessageHandler().encodeSubscriptionResponseError(
+      messageHandler.encodeSubscriptionResponseError(
         requestId,
         errorMessage: errorMessage,
       ),
@@ -201,11 +221,7 @@ class _IsolateSubscriptionRequestImpl extends SubscriptionRequest {
   FutureOr<Subscription> accept(String? clientId) {
     var id = _uuid.v4();
     sendPort.send(
-      MessageHandler().encodeSubscriptionResponseMessage(
-        requestId,
-        id,
-        clientId,
-      ),
+      messageHandler.encodeSubscriptionResponseMessage(requestId, id, clientId),
     );
     return _IsolateSubscriptionImpl(clientId, id, eventName, sendPort);
   }
@@ -243,17 +259,21 @@ class _IsolateUnsubscriptionRequestImpl extends UnsubscriptionRequest {
 
   final String? requestId;
 
+  @override
+  final String connectionId;
+
   _IsolateUnsubscriptionRequestImpl(
     this.clientId,
     this.subscriptionId,
     this.sendPort,
     this.requestId,
+    this.connectionId,
   );
 
   @override
   void reject(String errorMessage) {
     sendPort.send(
-      MessageHandler().encodeUnsubscriptionResponseError(
+      messageHandler.encodeUnsubscriptionResponseError(
         requestId,
         errorMessage: errorMessage,
       ),
@@ -263,7 +283,7 @@ class _IsolateUnsubscriptionRequestImpl extends UnsubscriptionRequest {
   @override
   void accept() {
     sendPort.send(
-      MessageHandler().encodeUnsubscriptionResponseMessage(requestId),
+      messageHandler.encodeUnsubscriptionResponseMessage(requestId),
     );
   }
 }

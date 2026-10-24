@@ -18,6 +18,8 @@ class SampleClass {
   String? hello;
   List<SampleNestedClass> nested = [];
 
+  int get readOnly => 1;
+
   SampleClass([this.hello]);
 }
 
@@ -48,3 +50,40 @@ class BabelRc {
   "required": ["hello", "nested"],
 })
 class ValidatedSampleClass {}
+
+class TypedSampleClass {
+  DateTime? when;
+  DateTime created = DateTime(2000);
+  double price = 0;
+  Map<String, SampleNestedClass> byName = {};
+  List items = [];
+}
+
+class ThrowingGetterClass {
+  String get broken => throw StateError('broken');
+}
+
+class NestedThrowingGetterClass {
+  ThrowingGetterClass inner = ThrowingGetterClass();
+}
+
+class RequiredArgClass {
+  String name;
+
+  RequiredArgClass(this.name);
+}
+
+class PrivateStateClass {
+  String visible = 'yes';
+  // Read through reflection, so the analyzer cannot see the use.
+  // ignore: unused_field
+  final String _cache = 'hidden';
+}
+
+class Node {
+  String name;
+  Node? parent;
+  List<Node> children = [];
+
+  Node(this.name);
+}

@@ -11,7 +11,7 @@ The ***new and improved*** definitive solution for JSON in Dart. It supports syn
 
 ```yaml
   dependencies:
-    belatuk_json_serializer: ^7.5.0
+    belatuk_json_serializer: ^8.0.0
 ```
 
 ## Usage

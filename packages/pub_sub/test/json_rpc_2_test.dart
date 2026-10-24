@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:belatuk_pub_sub/belatuk_pub_sub.dart';
 import 'package:belatuk_pub_sub/json_rpc_2.dart';
+import 'package:json_rpc_2/json_rpc_2.dart' as json_rpc_2;
 import 'package:stream_channel/stream_channel.dart';
 import 'package:test/test.dart';
 
@@ -87,6 +88,54 @@ void main() {
       await sub.unsubscribe();
       expect(trustedClient.clientId, clientId);
     });
+    test('concurrent requests share one client id', () async {
+      var sock = await Socket.connect(
+        InternetAddress.loopbackIPv4,
+        serverSocket.port,
+      );
+      var peer = json_rpc_2.Peer(streamSocket(sock));
+      var responses = {'1': Completer<Map>(), '2': Completer<Map>()};
+      responses.forEach((requestId, response) {
+        peer.registerMethod(requestId, (json_rpc_2.Parameters params) {
+          response.complete(params.asMap);
+        });
+      });
+      peer.listen();
+
+      peer.sendNotification('subscribe', {
+        'request_id': '1',
+        'event_name': 'a',
+      });
+      peer.sendNotification('subscribe', {
+        'request_id': '2',
+        'event_name': 'b',
+      });
+      var first = await responses['1']!.future;
+      var second = await responses['2']!.future;
+      expect(first['client_id'], isNotNull);
+      expect(second['client_id'], first['client_id']);
+      await peer.close();
+    });
+  });
+
+  test('can publish a null value', () async {
+    var sub = await client2.subscribe('nullable');
+    await client1.publish('nullable', null);
+    expect(await sub.first, isNull);
+  });
+
+  test('a disconnected subscriber does not block publishing', () async {
+    var sock = await Socket.connect(
+      InternetAddress.loopbackIPv4,
+      serverSocket.port,
+    );
+    var client = JsonRpc2Client('json_rpc_2_test::secret3', streamSocket(sock));
+    await client.subscribe('dead');
+    await client.close();
+
+    var sub = await client2.subscribe('dead');
+    await client1.publish('dead', 'alive').timeout(const Duration(seconds: 5));
+    expect(await sub.first, 'alive');
   });
 
   test('subscribers receive published events', () async {
@@ -164,13 +213,38 @@ void main() {
         print('Expected exception was thrown: ${e.message}');
       }
     });
+
+    test('malformed requests get an error response', () async {
+      var sock = await Socket.connect(
+        InternetAddress.loopbackIPv4,
+        serverSocket.port,
+      );
+      var peer = json_rpc_2.Peer(streamSocket(sock));
+      var response = Completer<Map>();
+      peer.registerMethod('malformed', (json_rpc_2.Parameters params) {
+        response.complete(params.asMap);
+      });
+      peer.listen();
+
+      peer.sendNotification('publish', {'request_id': 'malformed'});
+      var data = await response.future.timeout(const Duration(seconds: 5));
+      expect(data['status'], isFalse);
+      expect(data['error_message'], contains('event_name'));
+      await peer.close();
+    });
   });
 }
 
+/// Sends one JSON-RPC message per line, since TCP may merge or split writes.
 StreamChannel<String> streamSocket(Socket socket) {
-  var channel = _SocketStreamChannel(socket);
-  return channel.cast<List<int>>().transform(
-    StreamChannelTransformer.fromCodec(utf8),
+  var channel = _SocketStreamChannel(socket)
+      .cast<List<int>>()
+      .transform(StreamChannelTransformer.fromCodec(utf8));
+  var outgoing = StreamController<String>();
+  outgoing.stream.map((data) => '$data\n').pipe(channel.sink);
+  return StreamChannel(
+    channel.stream.transform(const LineSplitter()),
+    outgoing.sink,
   );
 }
 

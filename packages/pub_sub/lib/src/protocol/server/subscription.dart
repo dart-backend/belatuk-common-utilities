@@ -5,6 +5,14 @@ abstract class SubscriptionRequest {
   /// The ID of the client requesting to subscribe.
   String? get clientId;
 
+  /// Identifies the connection this request arrived on, if the adapter tracks
+  /// connections. Must be unique across all adapters of a `Server`.
+  ///
+  /// A trusted client that sends no client ID is assigned one ad-hoc ID per
+  /// connection, and that connection's subscriptions are cancelled when the
+  /// adapter reports it on `Adapter.onDisconnect`.
+  String? get connectionId => null;
+
   /// The name of the event the client wants to subscribe to.
   String? get eventName;
 
@@ -21,6 +29,11 @@ abstract class SubscriptionRequest {
 abstract class UnsubscriptionRequest {
   /// The ID of the client requesting to unsubscribe.
   String? get clientId;
+
+  /// Identifies the connection this request arrived on, if the adapter tracks
+  /// connections. A request without a client ID is checked against the
+  /// connection's ad-hoc ID.
+  String? get connectionId => null;
 
   /// The name of the event the client wants to unsubscribe from.
   String? get subscriptionId;

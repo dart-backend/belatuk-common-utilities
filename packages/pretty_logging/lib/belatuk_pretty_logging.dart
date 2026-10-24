@@ -6,8 +6,9 @@ import 'package:io/ansi.dart';
 /// The record's error and stack trace, if any, follow the message on their own
 /// lines. A stack trace is printed even when there is no error, as when
 /// [Logger.recordStackTraceAtLevel] adds one. By passing [omitError], you can
-/// omit printing the error and stack trace of a [LogRecord] that has an
-/// error; its message is still printed.
+/// omit printing the error and stack trace of a [LogRecord] that has either;
+/// its message is still printed. To drop whole records, filter the stream
+/// before it reaches [prettyLog] instead.
 ///
 /// The whole record is passed to [printFunction] in one call, so a print
 /// function that writes each call as its own log entry keeps the record
@@ -25,7 +26,9 @@ void prettyLog(
   printFunction ??= print;
 
   var parts = [record.toString()];
-  var omitted = record.error != null && (omitError?.call(record) ?? false);
+  var omitted =
+      (record.error != null || record.stackTrace != null) &&
+      (omitError?.call(record) ?? false);
   if (!omitted) {
     if (record.error != null) {
       parts.add(record.error.toString());
@@ -38,11 +41,13 @@ void prettyLog(
   var code = logColorChooser(record.level);
   printFunction(
     parts
-        .expand((part) => part.split('\n'))
+        .expand((part) => part.split(_lineBreakRgx))
         .map((line) => code.wrap(line) ?? line)
         .join('\n'),
   );
 }
+
+final _lineBreakRgx = RegExp(r'\r?\n');
 
 /// Chooses a color based on the logger [level].
 ///

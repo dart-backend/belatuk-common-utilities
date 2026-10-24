@@ -46,4 +46,15 @@ myLogger.onRecord.listen(
 );
 ```
 
-`omitError` is only asked about records that have an error. Returning `true` hides the error and stack trace; the record's message is still printed.
+`omitError` is only asked about records that have an error or a stack trace. Returning `true` hides the error and stack trace; the record's message is still printed.
+
+To drop whole records, such as routine 404s, filter them out before they reach `prettyLog`:
+
+```dart
+myLogger.onRecord
+    .where((r) {
+      var err = r.error;
+      return !(err is AngelHttpException && err.statusCode != 500);
+    })
+    .listen(prettyLog);
+```

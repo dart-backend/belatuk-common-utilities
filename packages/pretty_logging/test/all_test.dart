@@ -65,6 +65,48 @@ void main() {
     expect(log(record), equals(['$record\n$stack']));
   });
 
+  test('omitError can hide a stack trace without an error', () {
+    var record = LogRecord(Level.WARNING, 'x', 'test', null, stack);
+    expect(log(record, omitError: (_) => true), equals(['$record']));
+  });
+
+  test('omitError returning false prints everything', () {
+    var record = LogRecord(Level.SEVERE, 'Oops!', 'test', error, stack);
+    expect(
+      log(record, omitError: (_) => false),
+      equals(['$record\n$error\n$stack']),
+    );
+  });
+
+  test('omitError is not asked about a record with nothing to hide', () {
+    var asked = false;
+    var record = LogRecord(Level.INFO, 'Hey!', 'test');
+    log(
+      record,
+      omitError: (_) {
+        asked = true;
+        return true;
+      },
+    );
+    expect(asked, isFalse);
+  });
+
+  test('Windows line endings leave no stray carriage return', () {
+    var record = LogRecord(
+      Level.SEVERE,
+      'Oops!',
+      'test',
+      error,
+      StackTrace.fromString('#0 main\r\n#1 run'),
+    );
+    var printed = <String>[];
+    overrideAnsiOutput(true, () {
+      prettyLog(record, printFunction: printed.add);
+    });
+    expect(printed.single, isNot(contains('\r')));
+    expect(printed.single, contains('${red.escape}#0 main${resetAll.escape}'));
+  });
+
   test('levels are colored by value, including custom levels', () {
     expect(chooseLogColor(Level.SHOUT), equals(backgroundRed));
     expect(chooseLogColor(Level.OFF), equals(resetAll));

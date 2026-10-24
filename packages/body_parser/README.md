@@ -47,7 +47,7 @@ Body Parser exposes a simple class called `BodyParseResult`. You can easily pars
 
 You can also use `buildMapFromUri(Map, String)` to populate a map from a URL encoded string.
 
-This can easily be used with a library like [Belatuk JSON Serializer](https://pub.dev/packages/belatuk_json_seralizer) to build structured JSON/REST APIs. Add validation and you've got an instant backend.
+This can easily be used with a library like [Belatuk JSON Serializer](https://pub.dev/packages/belatuk_json_serializer) to build structured JSON/REST APIs. Add validation and you've got an instant backend.
 
   ```dart
   MyClass create(HttpRequest request) async {
@@ -59,7 +59,7 @@ This can easily be used with a library like [Belatuk JSON Serializer](https://pu
 
 In cases where you need to parse unrecognized content types, `body_parser` won't be of any help to you on its own. However, you can use the `originalBuffer` property of a `BodyParseResult` to see the original request buffer. To get this functionality, pass `storeOriginalBuffer` as `true` when calling `parseBody`.
 
-For example, if you wanted to [parse GraphQL queries within your server](https://github.com/belatuk/graphql_dart)...
+For example, if you wanted to [parse GraphQL queries within your server](https://github.com/dukefirehawk/graphql_dart)...
 
   ```dart
   app.get('/graphql', (req, res) async {

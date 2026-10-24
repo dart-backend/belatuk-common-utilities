@@ -192,6 +192,159 @@ café
     expect(jsons['body']['hello'], equals('world'));
   });
 
+  test('Upload keeps non-UTF-8 bytes and BOM unchanged', () async {
+    var boundary = 'myBoundary';
+    var headers = <String, String>{
+      'content-type': 'multipart/form-data; boundary=$boundary',
+    };
+    var latin1File = [0x63, 0x61, 0x66, 0xE9]; // "café" in Latin-1
+    var bomFile = [0xEF, 0xBB, 0xBF, 0x61];
+    var postData = <int>[
+      ...ascii.encode(
+        '--$boundary\r\n'
+        'Content-Disposition: form-data; name="a"; filename="a.csv"\r\n'
+        'Content-Type: text/plain\r\n\r\n',
+      ),
+      ...latin1File,
+      ...ascii.encode(
+        '\r\n--$boundary\r\n'
+        'Content-Disposition: form-data; name="b"; filename="b.txt"\r\n\r\n',
+      ),
+      ...bomFile,
+      ...ascii.encode('\r\n--$boundary--\r\n'),
+    ];
+
+    var response = await client!.post(
+      Uri.parse(url!),
+      headers: headers,
+      body: postData,
+    );
+    var jsons = json.decode(response.body);
+    expect(jsons['error'], isNull);
+    var files = jsons['files'];
+    expect(files.length, equals(2));
+    expect(files[0]['data'], equals(latin1File));
+    expect(files[1]['data'], equals(bomFile));
+  });
+
+  Future<dynamic> postField(List<int> value, {String? charset}) async {
+    var boundary = 'myBoundary';
+    var postData = <int>[
+      ...ascii.encode(
+        '--$boundary\r\n'
+        'Content-Disposition: form-data; name="a"\r\n'
+        '${charset == null ? '' : 'Content-Type: text/plain; charset=$charset\r\n'}'
+        '\r\n',
+      ),
+      ...value,
+      ...ascii.encode('\r\n--$boundary--\r\n'),
+    ];
+    var response = await client!.post(
+      Uri.parse(url!),
+      headers: {'content-type': 'multipart/form-data; boundary=$boundary'},
+      body: postData,
+    );
+    return json.decode(response.body);
+  }
+
+  test('Text field must be valid UTF-8', () async {
+    var cafe = utf8.encode('café');
+    var latin1Cafe = [0x63, 0x61, 0x66, 0xE9];
+
+    var jsons = await postField(cafe);
+    expect(jsons['error'], isNull);
+    expect(jsons['body']['a'], equals('café'));
+
+    jsons = await postField(cafe, charset: 'UTF-8');
+    expect(jsons['error'], isNull);
+    expect(jsons['body']['a'], equals('café'));
+
+    jsons = await postField(latin1Cafe);
+    expect(jsons['error'], contains('FormatException'));
+
+    jsons = await postField(latin1Cafe, charset: 'iso-8859-1');
+    expect(jsons['error'], contains('Unsupported charset'));
+  });
+
+  test('Part with bad headers fails the request', () async {
+    var boundary = 'myBoundary';
+    for (var partHeaders in [
+      'Content-Type: text/plain',
+      'Content-Disposition: form-data; name="a"\r\n'
+          'Content-Transfer-Encoding: base64',
+    ]) {
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: {'content-type': 'multipart/form-data; boundary=$boundary'},
+        body: '--$boundary\r\n$partHeaders\r\n\r\nx\r\n--$boundary--\r\n',
+      );
+      expect(
+        json.decode(response.body)['error'],
+        startsWith('HttpException'),
+        reason: partHeaders,
+      );
+    }
+  });
+
+  test('Field that only looks like JSON stays a string', () async {
+    var boundary = 'myBoundary';
+    var headers = <String, String>{
+      'content-type': 'multipart/form-data; boundary=$boundary',
+    };
+    var postData =
+        '''
+--$boundary
+Content-Disposition: form-data; name="title"
+
+[draft]
+--$boundary
+Content-Disposition: form-data; name="tags"
+
+["a","b"]
+--$boundary--
+'''
+            .replaceAll('\n', '\r\n');
+
+    var response = await client!.post(
+      Uri.parse(url!),
+      headers: headers,
+      body: postData,
+    );
+    var jsons = json.decode(response.body);
+    expect(jsons['error'], isNull);
+    expect(jsons['body']['title'], equals('[draft]'));
+    expect(jsons['body']['tags'], equals(['a', 'b']));
+  });
+
+  test('Field without a name is dropped', () async {
+    var boundary = 'myBoundary';
+    var headers = <String, String>{
+      'content-type': 'multipart/form-data; boundary=$boundary',
+    };
+    var postData =
+        '''
+--$boundary
+Content-Disposition: form-data
+
+x
+--$boundary
+Content-Disposition: form-data; name="hello"
+
+world
+--$boundary--
+'''
+            .replaceAll('\n', '\r\n');
+
+    var response = await client!.post(
+      Uri.parse(url!),
+      headers: headers,
+      body: postData,
+    );
+    var jsons = json.decode(response.body);
+    expect(jsons['error'], isNull);
+    expect(jsons['body'], equals({'hello': 'world'}));
+  });
+
   test('Multiple upload', () async {
     var boundary = 'myBoundary';
     var headers = <String, String>{

@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http_parser/http_parser.dart';
-import 'package:belatuk_http_server/belatuk_http_server.dart';
 import 'package:mime/mime.dart';
 
 import 'body_parse_result.dart';
@@ -30,9 +29,9 @@ Future<BodyParseResult> parseBody(
 /// Grabs data from an incoming request.
 ///
 /// Supports URL-encoded and JSON, as well as multipart/* forms.
-/// On a file upload request, only fields with the name **'file'** are processed
-/// as files. Anything else is put in the body. You can change the upload file name
-/// via the *fileUploadName* parameter. :)
+/// In a multipart form, a part with a `filename` or a binary Content-Type is
+/// added to the files with its bytes unchanged. Any other part is put in the
+/// body under its `name`.
 ///
 /// Use [storeOriginalBuffer] to add  the original request bytes to the result.
 Future<BodyParseResult> parseBodyFromStream(
@@ -49,15 +48,35 @@ Future<BodyParseResult> parseBodyFromStream(
         .then((b) => b.takeBytes());
   }
 
-  Future<String> getBody() {
+  // The body is read before the charset is checked, so originalBuffer is
+  // filled even when the charset is rejected.
+  Future<String> getBody(String? charset) async {
+    var bytes = await getBytes();
     if (storeOriginalBuffer) {
-      return getBytes().then((bytes) {
-        result.originalBuffer = bytes;
-        return utf8.decode(bytes);
-      });
-    } else {
-      return utf8.decoder.bind(data).join();
+      result.originalBuffer = bytes;
     }
+    _checkCharset(charset);
+    return utf8.decode(bytes);
+  }
+
+  try {
+    if (requestUri.hasQuery) {
+      buildMapFromUri(result.query, requestUri.query);
+    }
+  } catch (e, st) {
+    // A bad query string fails the request, so the body is not parsed. It is
+    // still read, so the stream is drained and originalBuffer is filled.
+    result.error = e;
+    result.stack = st;
+    try {
+      var bytes = await getBytes();
+      if (storeOriginalBuffer) {
+        result.originalBuffer = bytes;
+      }
+    } catch (_) {
+      // The query error is the one reported.
+    }
+    return result;
   }
 
   try {
@@ -75,64 +94,74 @@ Future<BodyParseResult> parseBodyFromStream(
           stream = data;
         }
 
-        var parts =
-            MimeMultipartTransformer(contentType.parameters['boundary']!)
-                .bind(stream)
-                .map(
-                  (part) =>
-                      HttpMultipartFormData.parse(part, defaultEncoding: utf8),
-                );
+        var parts = MimeMultipartTransformer(
+          contentType.parameters['boundary']!,
+        ).bind(stream);
 
-        await for (HttpMultipartFormData part in parts) {
-          if (part.isBinary ||
-              part.contentDisposition.parameters.containsKey('filename')) {
-            // Text parts arrive already decoded, so re-encode them with the
-            // same charset to recover the original bytes.
-            var encoding =
-                Encoding.getByName(part.contentType?.charset) ?? utf8;
-            var builder = await part.fold(
-              BytesBuilder(copy: false),
-              (BytesBuilder b, d) =>
-                  b..add(d is String ? encoding.encode(d) : d as List<int>),
+        await for (var part in parts) {
+          var disposition = part.headers['content-disposition'];
+          if (disposition == null) {
+            throw const HttpException(
+              'Multipart part has no Content-Disposition header',
             );
+          }
+          var params = HeaderValue.parse(
+            disposition,
+            preserveBackslash: true,
+          ).parameters;
+
+          var transferEncoding = part.headers['content-transfer-encoding'];
+          if (transferEncoding != null &&
+              !_transparentEncodings.contains(
+                HeaderValue.parse(transferEncoding).value.toLowerCase(),
+              )) {
+            throw HttpException(
+              'Unsupported Content-Transfer-Encoding: $transferEncoding',
+            );
+          }
+
+          var rawType = part.headers['content-type'];
+          var partType = rawType == null ? null : ContentType.parse(rawType);
+          var isText =
+              partType == null ||
+              partType.primaryType == 'text' ||
+              partType.mimeType == 'application/json';
+
+          var builder = await part.fold(
+            BytesBuilder(copy: false),
+            (BytesBuilder b, d) => b..add(d),
+          );
+
+          if (!isText || params.containsKey('filename')) {
             var upload = FileUploadInfo(
               // RFC 7578: a part without a Content-Type defaults to text/plain.
-              mimeType: part.contentType?.mimeType ?? 'text/plain',
-              name: part.contentDisposition.parameters['name'],
-              filename:
-                  part.contentDisposition.parameters['filename'] ?? 'file',
+              mimeType: partType?.mimeType ?? 'text/plain',
+              name: params['name'],
+              filename: params['filename'] ?? 'file',
               data: builder.takeBytes(),
             );
             result.files.add(upload);
-          } else if (part.isText) {
-            var name = '${part.contentDisposition.parameters['name']}';
-            var text = await part.join();
-            // Encode so that '&', '=', '+' and '%' in the raw value are
-            // treated as literal characters rather than query syntax.
-            buildMapFromUri(
-              result.body,
-              '${Uri.encodeQueryComponent(name)}=${Uri.encodeQueryComponent(text)}',
-            );
+          } else {
+            var name = params['name'];
+            _checkCharset(partType?.charset);
+            var text = utf8.decode(builder.takeBytes());
+            // A field without a name has nowhere to go, so it is dropped.
+            if (name != null) {
+              setValueFromKey(result.body, name, text);
+            }
           }
         }
       } else if (contentType.mimeType == 'application/json') {
-        result.body.addAll(
-          _foldToStringDynamic(json.decode(await getBody()) as Map?)!,
-        );
+        var body = await getBody(contentType.parameters['charset']);
+        result.body.addAll(_foldToStringDynamic(json.decode(body) as Map?)!);
       } else if (contentType.mimeType == 'application/x-www-form-urlencoded') {
-        var body = await getBody();
+        var body = await getBody(contentType.parameters['charset']);
         buildMapFromUri(result.body, body);
       } else if (storeOriginalBuffer == true) {
         result.originalBuffer = await getBytes();
       }
-    } else {
-      if (requestUri.hasQuery) {
-        buildMapFromUri(result.query, requestUri.query);
-      }
-
-      if (storeOriginalBuffer == true) {
-        result.originalBuffer = await getBytes();
-      }
+    } else if (storeOriginalBuffer == true) {
+      result.originalBuffer = await getBytes();
     }
   } catch (e, st) {
     result.error = e;
@@ -161,6 +190,23 @@ class _BodyParseResultImpl implements BodyParseResult {
   @override
   StackTrace? stack;
 }
+
+/// Throws a [FormatException] if [charset] is given and is not UTF-8 or
+/// US-ASCII, which is a subset of UTF-8.
+void _checkCharset(String? charset) {
+  if (charset == null || charset.toLowerCase() == 'utf8') {
+    return;
+  }
+  var encoding = Encoding.getByName(charset);
+  if (encoding != utf8 && encoding != ascii) {
+    throw FormatException(
+      'Unsupported charset "$charset"; only UTF-8 and US-ASCII are accepted',
+    );
+  }
+}
+
+/// Content-Transfer-Encodings that leave a multipart part's bytes unchanged.
+const _transparentEncodings = ['7bit', '8bit', 'binary'];
 
 Map<String, dynamic>? _foldToStringDynamic(Map? map) {
   return map?.keys.fold<Map<String, dynamic>>(

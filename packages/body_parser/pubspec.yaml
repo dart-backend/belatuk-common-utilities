@@ -12,7 +12,6 @@ environment:
 
 dependencies:
   http_parser: ^4.0.0
-  belatuk_http_server: ^5.0.0
   mime: ^2.0.0
 
 dev_dependencies:

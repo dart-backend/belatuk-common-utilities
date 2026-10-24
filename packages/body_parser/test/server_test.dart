@@ -146,6 +146,173 @@ void main() {
       var body = json.decode(response.body)['body'];
       expect(body['token'], equals(token));
     });
+
+    test('Query string is parsed alongside the body', () async {
+      var response = await client!.post(
+        Uri.parse('$url/?page=2'),
+        headers: headers,
+        body: 'hello=world',
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], isNull);
+      expect(result['query'], equals({'page': 2}));
+      expect(result['body'], equals({'hello': 'world'}));
+    });
+
+    test('Bad query string fails the request', () async {
+      var response = await client!.post(
+        Uri.parse('$url/?q=%E9'),
+        headers: headers,
+        body: 'hello=world',
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], contains('FormatException'));
+      expect(result['body'], equals({}));
+      expect(result['originalBuffer'], equals(utf8.encode('hello=world')));
+    });
+
+    test('Empty pairs are skipped', () async {
+      var response = await client!.post(
+        Uri.parse('$url/?'),
+        headers: headers,
+        body: 'a=1&&b=2&',
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], isNull);
+      expect(result['query'], equals({}));
+      expect(result['body'], equals({'a': 1, 'b': 2}));
+    });
+
+    test('Raw non-ASCII is kept, invalid UTF-8 escapes are rejected', () async {
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: 'name=café&x=caf%C3%A9 é',
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], isNull);
+      expect(result['body'], equals({'name': 'café', 'x': 'café é'}));
+
+      response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: 'name=caf%E9',
+      );
+      expect(json.decode(response.body)['error'], contains('FormatException'));
+    });
+
+    test('Non-UTF-8 charset is rejected', () async {
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: {
+          'content-type':
+              'application/x-www-form-urlencoded; charset=iso-8859-1',
+        },
+        body: 'hello=world',
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], contains('Unsupported charset'));
+      expect(result['originalBuffer'], equals(utf8.encode('hello=world')));
+    });
+
+    test('UTF-8 aliases and US-ASCII are accepted', () async {
+      for (var charset in ['utf-8', 'UTF8', 'us-ascii']) {
+        var response = await client!.post(
+          Uri.parse(url!),
+          headers: {
+            'content-type':
+                'application/x-www-form-urlencoded; charset=$charset',
+          },
+          body: utf8.encode('hello=world'),
+        );
+        var result = json.decode(response.body);
+        expect(result['error'], isNull, reason: charset);
+        expect(result['body'], equals({'hello': 'world'}), reason: charset);
+      }
+    });
+
+    test('Stray percent is kept', () async {
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: 'note=100%&off=50%2&name=bob%20b',
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], isNull);
+      expect(
+        result['body'],
+        equals({'note': '100%', 'off': '50%2', 'name': 'bob b'}),
+      );
+    });
+
+    test('Conflicting keys are rejected', () async {
+      for (var body in [
+        'user=bob&user.name=x',
+        'user.name=x&user=bob',
+        'a.b=1&a.b.c=2',
+        'tags=x&tags[]=y',
+        'tags[]=y&tags=x',
+        'items[]=1&items.count=2',
+        'user.name=x&user',
+      ]) {
+        var response = await client!.post(
+          Uri.parse(url!),
+          headers: headers,
+          body: body,
+        );
+        expect(
+          json.decode(response.body)['error'],
+          contains('conflicts with an earlier value'),
+          reason: body,
+        );
+      }
+    });
+
+    test('Dotted array keys are nested', () async {
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: 'user.name=x&user.tags[]=a&user.tags[]=b&user.tags.x=1',
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], contains('conflicts with an earlier value'));
+
+      response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: 'user.name=x&user.tags[]=a&user.tags[]=b',
+      );
+      result = json.decode(response.body);
+      expect(result['error'], isNull);
+      expect(
+        result['body'],
+        equals({
+          'user': {
+            'name': 'x',
+            'tags': ['a', 'b'],
+          },
+        }),
+      );
+    });
+
+    test('Repeated and flag keys', () async {
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: 'a=1&a=2&flags[]&opts.debug&user.name=x&user.name=y',
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], isNull);
+      expect(
+        result['body'],
+        equals({
+          'a': 2,
+          'flags': [true],
+          'opts': {'debug': true},
+          'user': {'name': 'y'},
+        }),
+      );
+    });
   });
 
   group('json', () {

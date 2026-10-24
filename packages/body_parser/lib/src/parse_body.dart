@@ -55,43 +55,63 @@ Future<BodyParseResult> parseBodyFromStream(
     return bytes;
   }
 
+  // Reads the rest of the body after an error, so it does not stall the
+  // connection and originalBuffer is filled. An error while reading is
+  // ignored, since the earlier error is the one reported.
+  Future<void> drainRest() async {
+    try {
+      if (storeOriginalBuffer) {
+        await readAll();
+      } else {
+        await data.drain<void>();
+      }
+    } catch (_) {
+      // Ignored.
+    }
+  }
+
   // The whole body is always read, even when the charset or the bytes are
   // rejected, so it does not stall the connection and originalBuffer is
   // filled. Without originalBuffer, the body is decoded as it arrives so it is
   // not held in memory twice.
   Future<String> getBody(String? charset) async {
-    if (storeOriginalBuffer) {
-      var bytes = await readAll();
-      return _textEncoding(charset).decode(bytes);
+    Encoding encoding;
+    try {
+      encoding = _textEncoding(charset);
+    } catch (_) {
+      await drainRest();
+      rethrow;
     }
 
-    Object? error;
-    StackTrace? stack;
-    void guard(void Function() step) {
-      if (error == null) {
+    if (storeOriginalBuffer) {
+      return encoding.decode(await readAll());
+    }
+
+    // Bytes that do not decode, mid-stream or cut off at the end, are
+    // reported the same way, after the rest of the body has been read.
+    var text = StringBuffer();
+    var decoder = encoding.decoder.startChunkedConversion(
+      StringConversionSink.fromStringSink(text),
+    );
+    (Object, StackTrace)? failure;
+    await for (var chunk in data) {
+      if (failure == null) {
         try {
-          step();
+          decoder.add(chunk);
         } catch (e, st) {
-          error = e;
-          stack = st;
+          failure = (e, st);
         }
       }
     }
-
-    var text = StringBuffer();
-    late Sink<List<int>> decoder;
-    guard(() {
-      decoder = _textEncoding(charset).decoder
-          .startChunkedConversion(StringConversionSink.fromStringSink(text));
-    });
-    await for (var chunk in data) {
-      guard(() => decoder.add(chunk));
+    if (failure == null) {
+      try {
+        decoder.close();
+      } catch (e, st) {
+        failure = (e, st);
+      }
     }
-    guard(() => decoder.close());
-
-    var e = error;
-    if (e != null) {
-      Error.throwWithStackTrace(e, stack!);
+    if (failure != null) {
+      Error.throwWithStackTrace(failure.$1, failure.$2);
     }
     return text.toString();
   }
@@ -114,14 +134,8 @@ Future<BodyParseResult> parseBodyFromStream(
     result.query.clear();
     result.error = e;
     result.stack = st;
-    try {
-      if (storeOriginalBuffer) {
-        await readAll();
-      } else if (isMultipart || isJson || isUrlEncoded) {
-        await data.drain<void>();
-      }
-    } catch (_) {
-      // The query error is the one reported.
+    if (storeOriginalBuffer || isMultipart || isJson || isUrlEncoded) {
+      await drainRest();
     }
     return result;
   }
@@ -145,7 +159,9 @@ Future<BodyParseResult> parseBodyFromStream(
           var read = false;
           if (partError == null) {
             try {
-              var (params, partType) = _readPartHeaders(part.headers);
+              var (:name, :filename, :partType) = _readPartHeaders(
+                part.headers,
+              );
               var isText =
                   partType == null ||
                   partType.primaryType == 'text' ||
@@ -161,18 +177,22 @@ Future<BodyParseResult> parseBodyFromStream(
                 return;
               }
 
-              if (!isText || params.containsKey('filename')) {
+              if (filename == '' && bytes.isEmpty) {
+                // A file input left blank: browsers send an empty filename
+                // and no content, which is not an upload.
+              } else if (!isText || filename != null) {
                 var upload = FileUploadInfo(
                   // RFC 7578: a part without a Content-Type defaults to
                   // text/plain.
                   mimeType: partType?.mimeType ?? 'text/plain',
-                  name: _decodeFieldName(params['name']),
-                  filename: _decodeFieldName(params['filename']) ?? 'file',
+                  name: name,
+                  filename: filename == null || filename.isEmpty
+                      ? 'file'
+                      : filename,
                   data: bytes,
                 );
                 result.files.add(upload);
               } else {
-                var name = _decodeFieldName(params['name']);
                 var text = _textEncoding(partType?.charset).decode(bytes);
                 // A field without a name has nowhere to go, so it is dropped.
                 if (name != null) {
@@ -202,6 +222,8 @@ Future<BodyParseResult> parseBodyFromStream(
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('A JSON body must be an object');
       }
+      // JSON keys are data, not field names, so they are not checked for
+      // control characters.
       result.body.addAll(decoded);
     } else if (isUrlEncoded) {
       var body = await getBody(contentType!.parameters['charset']);
@@ -328,11 +350,17 @@ Future<void> _forEachPart(
   return done.future;
 }
 
-/// Reads a multipart part's Content-Disposition parameters and Content-Type.
+/// Reads a multipart part's field name, filename and Content-Type.
 ///
-/// Throws an [HttpException] if the part has no Content-Disposition, or a
-/// Content-Transfer-Encoding that changes its bytes.
-(Map<String, String?>, ContentType?) _readPartHeaders(
+/// Browsers send `"` as `%22` in names and filenames, as the HTML standard
+/// says, so that is decoded. Nothing else is, so a literal `%` is kept, and so
+/// are the `%0D` and `%0A` browsers send for CR and LF.
+///
+/// Throws an [HttpException] if the part has no Content-Disposition or a
+/// Content-Transfer-Encoding that changes its bytes, and a [FormatException]
+/// if its name or filename has a control character or line break. Both are
+/// checked before the part is read, so a bad part is never buffered.
+({String? name, String? filename, ContentType? partType}) _readPartHeaders(
   Map<String, String> headers,
 ) {
   var disposition = headers['content-disposition'];
@@ -356,18 +384,35 @@ Future<void> _forEachPart(
     );
   }
 
+  var name = params['name']?.replaceAll('%22', '"');
+  var filename = params['filename']?.replaceAll('%22', '"');
+  if (name != null) {
+    checkNoControlChars(name);
+  }
+  if (filename != null && _unsafeFilenameRgx.hasMatch(filename)) {
+    // The filename is left out, so logging the error cannot inject text.
+    throw const FormatException(
+      'A filename contains a line break, control character or bidi override',
+    );
+  }
+
   var rawType = headers['content-type'];
-  return (params, rawType == null ? null : ContentType.parse(rawType));
+  return (
+    name: name,
+    filename: filename,
+    partType: rawType == null ? null : ContentType.parse(rawType),
+  );
 }
 
-final _fieldNameEscapeRgx = RegExp('%(22|0[DdAa])');
-
-/// Decodes the escapes browsers use in multipart field names and filenames:
-/// `%22` for `"`, `%0D` for CR and `%0A` for LF, as the HTML standard says.
-/// Nothing else is decoded, so a literal `%` is kept.
-String? _decodeFieldName(String? name) => name?.replaceAllMapped(
-  _fieldNameEscapeRgx,
-  (m) => String.fromCharCode(int.parse(m[1]!, radix: 16)),
+/// Characters a filename must not contain: control characters other than tab,
+/// the line breaks U+2028 and U+2029, and the bidi overrides and isolates
+/// (U+202A to U+202E and U+2066 to U+2069) that can make a name such as
+/// `invoice\u202Etxt.exe` display as `invoiceexe.txt`.
+///
+/// Tab and the plain direction marks U+200E, U+200F and U+061C are allowed,
+/// since real filenames, such as Hebrew or Arabic ones, can contain them.
+final _unsafeFilenameRgx = RegExp(
+  r'[\x00-\x08\x0A-\x1F\x7F-\x9F\u2028-\u202E\u2066-\u2069]',
 );
 
 /// Content-Transfer-Encodings that leave a multipart part's bytes unchanged.

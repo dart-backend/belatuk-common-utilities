@@ -160,6 +160,14 @@ void main() {
         null,
       ),
       ([utf8.encode('{"a":'), utf8.encode('1}')], 'iso-8859-1'),
+      // Cut off in the middle of a two-byte character.
+      (
+        [
+          utf8.encode('{"a":"'),
+          [0xC3],
+        ],
+        'utf-8',
+      ),
     ]) {
       var done = false;
       Stream<Uint8List> bytes() async* {
@@ -179,7 +187,7 @@ void main() {
     }
   });
 
-  test('Escaped quotes and newlines in field names are decoded', () async {
+  test('Only %22 is decoded in names, and an empty name is dropped', () async {
     var boundary = 'myBoundary';
     var result = await parseBodyFromStream(
       body([
@@ -189,15 +197,121 @@ void main() {
             'Content-Disposition: form-data; name="p%25"\r\n\r\n2\r\n',
         '--$boundary\r\n'
             'Content-Disposition: form-data; name="f%22"; '
-            'filename="x%22.txt"\r\n\r\nfile\r\n',
+            'filename="x%22%0D%0A.txt"\r\n\r\nfile\r\n',
+        '--$boundary\r\n'
+            'Content-Disposition: form-data; name=""\r\n\r\n3\r\n',
         '--$boundary--\r\n',
       ]),
       MediaType('multipart', 'form-data', {'boundary': boundary}),
       Uri.parse('/'),
     );
     expect(result.error, isNull);
-    expect(result.body, equals({'a"b\r\nc': 1, 'p%25': 2}));
+    expect(result.body, equals({'a"b%0D%0Ac': 1, 'p%25': 2}));
     expect(result.files.single.name, equals('f"'));
-    expect(result.files.single.filename, equals('x".txt'));
+    // CR and LF stay escaped, so they cannot inject a line break.
+    expect(result.files.single.filename, equals('x"%0D%0A.txt'));
+  });
+
+  test('Control characters in a name or filename are rejected', () async {
+    var boundary = 'myBoundary';
+    for (var disposition in [
+      'form-data; name="f"; filename="a\nX-Evil: 1.txt"',
+      'form-data; name="a\nb"',
+      'form-data; name="f"; filename="a\u2028b.txt"',
+      'form-data; name="f"; filename="a\u009B2Jb.txt"',
+      'form-data; name="f"; filename="invoice\u202Etxt.exe"',
+      'form-data; name="f\nx"; filename="a.txt"',
+    ]) {
+      var result = await parseBodyFromStream(
+        Stream.value(
+          utf8.encode(
+            '--$boundary\r\nContent-Disposition: $disposition\r\n\r\nx\r\n'
+            '--$boundary--\r\n',
+          ),
+        ),
+        MediaType('multipart', 'form-data', {'boundary': boundary}),
+        Uri.parse('/'),
+      );
+      expect(result.error, isA<FormatException>(), reason: disposition);
+      expect(
+        result.error.toString(),
+        contains('control character'),
+        reason: disposition,
+      );
+      expect(result.files, isEmpty);
+    }
+  });
+
+  test('A blank file input is not an upload', () async {
+    var boundary = 'myBoundary';
+    var result = await parseBodyFromStream(
+      body([
+        '--$boundary\r\n'
+            'Content-Disposition: form-data; name="doc"; filename=""\r\n'
+            'Content-Type: application/octet-stream\r\n\r\n\r\n',
+        '--$boundary\r\n'
+            'Content-Disposition: form-data; name="a"\r\n\r\n1\r\n',
+        '--$boundary--\r\n',
+      ]),
+      MediaType('multipart', 'form-data', {'boundary': boundary}),
+      Uri.parse('/'),
+    );
+    expect(result.error, isNull);
+    expect(result.files, isEmpty);
+    expect(result.body, equals({'a': 1}));
+  });
+
+  test('An empty filename with content falls back to "file"', () async {
+    var boundary = 'myBoundary';
+    var result = await parseBodyFromStream(
+      body([
+        '--$boundary\r\n'
+            'Content-Disposition: form-data; name="doc"; filename=""\r\n'
+            'Content-Type: application/octet-stream\r\n\r\nx\r\n',
+        '--$boundary--\r\n',
+      ]),
+      MediaType('multipart', 'form-data', {'boundary': boundary}),
+      Uri.parse('/'),
+    );
+    expect(result.error, isNull);
+    expect(result.files.single.filename, equals('file'));
+  });
+
+  test('Deeply nested JSON does not overflow the stack', () async {
+    var depth = 200000;
+    for (var (contentType, text) in [
+      (MediaType('application', 'json'), '{"a":${'[' * depth}${']' * depth}}'),
+      (
+        MediaType('application', 'x-www-form-urlencoded'),
+        'a=${'%5B' * depth}${'%5D' * depth}',
+      ),
+    ]) {
+      var result = await parseBodyFromStream(
+        body([text]),
+        contentType,
+        Uri.parse('/'),
+      );
+      expect(result.error, isNull, reason: contentType.mimeType);
+      expect(result.body['a'], isList);
+    }
+  });
+
+  test('Tab and plain direction marks are allowed in filenames', () async {
+    var boundary = 'myBoundary';
+    for (var filename in ['a\tb.txt', '\u05D0\u200F.txt', '\u0627\u061C.txt']) {
+      var result = await parseBodyFromStream(
+        Stream.value(
+          utf8.encode(
+            '--$boundary\r\n'
+            'Content-Disposition: form-data; name="f"; filename="$filename"\r\n'
+            '\r\nx\r\n--$boundary--\r\n',
+          ),
+        ),
+        MediaType('multipart', 'form-data', {'boundary': boundary}),
+        Uri.parse('/'),
+      );
+      expect(result.error, isNull, reason: filename);
+      expect(result.files.single.filename, equals(filename));
+    }
   });
 }

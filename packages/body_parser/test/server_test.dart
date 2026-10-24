@@ -181,6 +181,16 @@ void main() {
       expect(result['error'], isNull);
       expect(result['query'], equals({}));
       expect(result['body'], equals({'a': 1, 'b': 2}));
+
+      response = await client!.post(
+        Uri.parse('$url/?x=1&=&=v&=%C3'),
+        headers: headers,
+        body: '=1&a=1&=%C3',
+      );
+      result = json.decode(response.body);
+      expect(result['error'], isNull);
+      expect(result['query'], equals({'x': 1}));
+      expect(result['body'], equals({'a': 1}));
     });
 
     test('Raw non-ASCII is kept, invalid UTF-8 escapes are rejected', () async {
@@ -259,7 +269,17 @@ void main() {
     });
 
     test('Keys with empty or misplaced segments are rejected', () async {
-      for (var body in ['a.=1', '.a=1', 'a..b=1', 'a[].b=1', 'a.[]=1', '=1']) {
+      for (var body in [
+        'a.=1',
+        '.a=1',
+        'a..b=1',
+        'a[].b=1',
+        'a.[]=1',
+        '[]=1',
+        'a[][]=1',
+        'a[]x=1',
+        'a[]b[]=1',
+      ]) {
         var response = await client!.post(
           Uri.parse(url!),
           headers: headers,
@@ -271,6 +291,46 @@ void main() {
           reason: body,
         );
       }
+    });
+
+    test('Keys with control characters are rejected', () async {
+      for (var body in [
+        'a%0D%0AX-Evil:1=1',
+        'a%0Ab',
+        'a%00=1',
+        'a%C2%9B=1',
+        // Keys that would also be invalid, or conflict, must not put the line
+        // break into those errors' messages.
+        'a%0D%0AX-Evil:1.=1',
+        'a=1&a.b%0AEvil=2',
+        'a%D8%9Cb=1',
+      ]) {
+        var response = await client!.post(
+          Uri.parse(url!),
+          headers: headers,
+          body: body,
+        );
+        var error = json.decode(response.body)['error'] as String;
+        expect(error, contains('control character'), reason: body);
+        expect(error, isNot(contains('Evil')));
+      }
+    });
+
+    test('Keys inside a JSON-looking value are data', () async {
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        // a={"x\ny":1}
+        body: 'a=%7B%22x%5Cny%22%3A1%7D',
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], isNull);
+      expect(
+        result['body'],
+        equals({
+          'a': {'x\ny': 1},
+        }),
+      );
     });
 
     test('Conflicting keys are rejected', () async {
@@ -354,6 +414,24 @@ void main() {
 
   group('json', () {
     var headers = <String, String>{'content-type': 'application/json'};
+    test('Keys are data, so control characters are allowed', () async {
+      var body = {
+        'a\r\nb': 1,
+        't': {'Hello\nWorld': 'x'},
+        'l': [
+          {'x\u202Ey': 1},
+        ],
+      };
+      var response = await client!.post(
+        Uri.parse(url!),
+        headers: headers,
+        body: json.encode(body),
+      );
+      var result = json.decode(response.body);
+      expect(result['error'], isNull);
+      expect(result['body'], equals(body));
+    });
+
     test('Body that is not an object is rejected', () async {
       for (var body in ['null', '[]', '42', '"x"']) {
         var response = await client!.post(

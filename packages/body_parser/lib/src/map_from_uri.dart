@@ -13,6 +13,11 @@ void buildMapFromUri(Map map, String body) {
     } else if (keyValuePair.contains('=')) {
       var equals = keyValuePair.indexOf('=');
       var key = _decode(keyValuePair.substring(0, equals));
+      // A pair with no key is skipped before its value is decoded, so a bad
+      // escape in a value that is thrown away cannot fail the parse.
+      if (key.isEmpty) {
+        continue;
+      }
       var value = _decode(keyValuePair.substring(equals + 1));
       setValueFromKey(map, key, value);
     } else {
@@ -43,12 +48,41 @@ final _parseArrayRgx = RegExp(r'^(.+)\[\]$');
 ///
 /// A key ending in `[]` appends to a list, and a dotted key such as
 /// `map.foo.bar` builds nested maps. The two combine, so `map.foo[]` appends
-/// to a list inside a nested map.
+/// to a list inside a nested map. An empty [key] is ignored.
 ///
 /// Throws a [FormatException] if [key] conflicts with an earlier value, such
-/// as `user.name` after `user=bob`, or `tags=x` after `tags[]=y`.
+/// as `user.name` after `user=bob`, or `tags=x` after `tags[]=y`, or if [key]
+/// contains a control character. Keys inside a JSON-looking [value] are data,
+/// so they are not checked.
 void setValueFromKey(Map map, String key, String value) {
-  _setValue(map, key, getValue(value));
+  // A value with no key, such as `=v` or a multipart field with `name=""`,
+  // has nowhere to go, so it is dropped without being converted.
+  if (key.isNotEmpty) {
+    _setValue(map, key, getValue(value));
+  }
+}
+
+/// C0 control characters (including CR, LF and NUL), DEL, C1 control
+/// characters (including U+0085 and U+009B), the line breaks U+2028 and
+/// U+2029, and the bidi controls that can make text display in a misleading
+/// order (U+061C, U+200E, U+200F, U+202A to U+202E, and U+2066 to U+2069).
+final _controlCharRgx = RegExp(
+  r'[\x00-\x1F\x7F-\x9F\u061C\u200E\u200F\u2028-\u202E\u2066-\u2069]',
+);
+
+/// Throws a [FormatException] if [value] contains a control character or
+/// line break.
+///
+/// Form and query keys and multipart field names are often logged or put in
+/// headers, where a line break could inject text.
+void checkNoControlChars(String value) {
+  if (_controlCharRgx.hasMatch(value)) {
+    // The value is left out, so logging the error cannot inject text either.
+    throw const FormatException(
+      'A key or field name contains a control character, line break or bidi '
+      'control',
+    );
+  }
 }
 
 /// A map built from dotted keys, as opposed to one decoded from JSON.
@@ -77,17 +111,24 @@ class _KeyList extends ListBase<dynamic> {
 }
 
 void _setValue(Map map, String key, dynamic value) {
+  // Checked first, so no later error message can carry a line break.
+  checkNoControlChars(key);
+
   // i.e. map.foo.bar => [map, foo, bar]
   var keys = key.split('.');
 
   // Every segment needs a name, and only the last can be a list, since lists
-  // of maps are not supported.
+  // of maps and lists of lists are not supported.
+  RegExpMatch? arrayMatch;
   for (var i = 0; i < keys.length; i++) {
-    var segment = keys[i];
-    if (segment.isEmpty ||
-        segment == '[]' ||
-        (i < keys.length - 1 && segment.endsWith('[]'))) {
+    var list = _parseArrayRgx.firstMatch(keys[i]);
+    var name = list?[1] ?? keys[i];
+    var isLast = i == keys.length - 1;
+    if (name.isEmpty || name.contains('[]') || (list != null && !isLast)) {
       throw FormatException('Key "$key" is not valid');
+    }
+    if (isLast) {
+      arrayMatch = list;
     }
   }
 
@@ -104,7 +145,6 @@ void _setValue(Map map, String key, dynamic value) {
   }
 
   // Only the last segment can be a list, i.e. map.foo[] => map: {foo: [...]}
-  var arrayMatch = _parseArrayRgx.firstMatch(keys.last);
   if (arrayMatch != null) {
     var listKey = arrayMatch[1]!;
     var list = targetMap[listKey];

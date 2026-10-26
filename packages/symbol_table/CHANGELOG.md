@@ -1,5 +1,21 @@
 # Change Log
 
+## 6.0.0
+
+### Breaking changes in 6.0.0
+
+* **Breaking:** `clone()` copies the scope's variables, so changing a variable in the clone no longer changes the original, and each copy's `symbolTable` is the clone.
+* **Breaking:** A variable copied into a fork has the fork as its `symbolTable`, instead of the original scope.
+* **Breaking:** `uniqueName` no longer returns a name that a descendant scope has generated, or the name of a visible variable, so some generated names change.
+* **Breaking:** `allVariablesWithVisibility` and `allPublicVariables` leave out a variable that a variable in a nearer scope shadows, even when the two have different visibilities.
+
+### Fixes in 6.0.0
+
+* **Forks:** `fork()` uses its `values`, which replace copied variables with the same names.
+* **Forks:** A fork resolves variables from its ancestors afresh each time, so it no longer returns one that was removed, or that a newer variable shadows.
+* **Forks:** `fork()` and `clone()` keep the scope's `context` and the names it has generated with `uniqueName`.
+* **Docs:** The `remove()` documentation describes how forks behave, and no longer refers to a missing `createdChild` method.
+
 ## 5.5.0
 
 * Require Dart >= 3.13

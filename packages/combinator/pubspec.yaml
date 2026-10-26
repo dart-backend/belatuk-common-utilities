@@ -1,5 +1,5 @@
 name: belatuk_combinator
-version: 5.5.0
+version: 6.0.0
 description: Packrat parser combinators that support static typing, generics, file spans, memoization, and more.
 homepage: https://github.com/dart-backend/belatuk-common-utilities
 repository: https://github.com/dart-backend/belatuk-common-utilities

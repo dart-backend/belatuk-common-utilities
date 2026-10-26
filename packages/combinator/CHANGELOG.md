@@ -1,5 +1,18 @@
 # Change Log
 
+## 6.0.0
+
+### Breaking changes in 6.0.0
+
+* **Breaking:** Requires `belatuk_code_buffer` 6.0.0, which `Parser.stringify` takes. Its `length`, span offsets and `writeln()` behave differently, as described in its changelog.
+* **Breaking:** `Reference.printed` is removed. Each `CodeBuffer` now tracks which references it has printed.
+
+### Fixes in 6.0.0
+
+* **Stringify:** A reference is printed in full the first time, and `(previously printed reference)` is only written when it appears again.
+* **Stringify:** Calling `stringify` again with a new `CodeBuffer` prints references in full, instead of only the marker.
+* **Stringify:** A reference that contains itself no longer recurses forever.
+
 ## 5.5.0
 
 * Require Dart >= 3.13

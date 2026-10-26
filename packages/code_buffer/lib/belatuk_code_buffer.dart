@@ -46,17 +46,22 @@ class CodeBuffer implements StringBuffer {
   @override
   bool get isNotEmpty => _lines.isNotEmpty;
 
+  /// The length of [toString], including indentation, line breaks and any trailing newline.
   @override
-  int get length => _length;
+  int get length => _length + (trailingNewline ? newline.length : 0);
 
-  CodeBufferLine _createLine() {
+  CodeBufferLine _createLine([int? indentationLevel]) {
+    var level = indentationLevel ?? _indentationLevel;
+    var column = level * space.length;
+    if (_lines.isNotEmpty) _length += newline.length;
+    _length += column;
     var start = SourceLocation(
       _length,
       sourceUrl: sourceUrl,
       line: _lines.length,
-      column: _indentationLevel * space.length,
+      column: column,
     );
-    var line = CodeBufferLine._(_indentationLevel, start).._end = start;
+    var line = CodeBufferLine._(level, start).._end = start;
     _lines.add(_lastLine = line);
     return line;
   }
@@ -72,125 +77,101 @@ class CodeBuffer implements StringBuffer {
   }
 
   /// Copies the contents of this [CodeBuffer] into another, preserving indentation and source mapping information.
+  ///
+  /// The copied lines always start on a new line in [other], and the last one is terminated.
+  ///
+  /// Each line's [CodeBufferLine.sourceMappings] are copied unchanged. Their spans are not moved to
+  /// the line's new position, since a [CodeBuffer] cannot tell which of them are generated spans.
   void copyInto(CodeBuffer other) {
     if (_lines.isEmpty) return;
-    var i = 0;
+    other._currentLine = null;
 
-    for (var line in _lines) {
-      // To compute offset:
-      //   1. Find current length of other
-      //   2. Add length of its newline
-      //   3. Add indentation
-      var column =
-          (other._indentationLevel + line.indentationLevel) *
-          other.space.length;
-      var offset = other._length + other.newline.length + column;
-
-      // Re-compute start + end
-      var start = SourceLocation(
-        offset,
-        sourceUrl: other.sourceUrl,
-        line: other._lines.length + i,
-        column: column,
+    // Iterate over a copy when copying a buffer into itself.
+    var lines = identical(this, other) ? List.of(_lines) : _lines;
+    for (var line in lines) {
+      var text = line.text;
+      var clone = other._createLine(
+        text.isEmpty ? 0 : other._indentationLevel + line.indentationLevel,
       );
-
-      var end = SourceLocation(
-        offset + line.span.length,
+      var start = clone._start;
+      clone._buf.write(text);
+      clone._end = SourceLocation(
+        start.offset + text.length,
         sourceUrl: other.sourceUrl,
         line: start.line,
-        column: column + line._buf.length,
+        column: start.column + text.length,
       );
+      clone.sourceMappings.addAll(line.sourceMappings);
+      other._length += text.length;
 
-      var clone =
-          CodeBufferLine._(
-              line.indentationLevel + other._indentationLevel,
-              start,
-            )
-            .._end = end
-            .._buf.write(line._buf.toString());
-
-      // Adjust lastSpan
-      if (line._lastSpan != null) {
-        var s = line._lastSpan!.start;
-        var lastSpanColumn =
-            ((line.indentationLevel + other._indentationLevel) *
-                other.space.length) +
-            line.text.indexOf(line._lastSpan!.text);
+      // Rebase lastSpan, keeping its position relative to the start of the line.
+      var lastSpan = line._lastSpan;
+      if (lastSpan != null) {
+        var delta = lastSpan.start.column - line._start.column;
         clone._lastSpan = SourceSpan(
           SourceLocation(
-            offset + s.offset,
+            start.offset + delta,
             sourceUrl: other.sourceUrl,
-            line: clone.span.start.line,
-            column: lastSpanColumn,
+            line: start.line,
+            column: start.column + delta,
           ),
           SourceLocation(
-            offset + s.offset + line._lastSpan!.length,
+            start.offset + delta + lastSpan.length,
             sourceUrl: other.sourceUrl,
-            line: clone.span.end.line,
-            column: lastSpanColumn + line._lastSpan!.length,
+            line: start.line,
+            column: start.column + delta + lastSpan.length,
           ),
-          line._lastSpan!.text,
+          lastSpan.text,
         );
       }
-
-      other._lines.add(other._currentLine = other._lastLine = clone);
-
-      // Adjust length accordingly...
-      other._length = offset + clone.span.length;
-      i++;
     }
-
-    other.writeln();
   }
 
   @override
   void clear() {
     _lines.clear();
     _length = _indentationLevel = 0;
-    _currentLine = null;
+    _currentLine = _lastLine = null;
   }
 
   @override
   void writeCharCode(int charCode) {
-    _currentLine ??= _createLine();
-
-    _currentLine!._buf.writeCharCode(charCode);
-    var end = _currentLine!._end;
-    _currentLine!._end = SourceLocation(
-      end.offset + 1,
-      sourceUrl: end.sourceUrl,
-      line: end.line,
-      column: end.column + 1,
-    );
-    _length++;
-    _currentLine!._lastSpan = SourceSpan(
-      end,
-      _currentLine!._end,
-      String.fromCharCode(charCode),
-    );
+    _write(String.fromCharCode(charCode));
   }
 
+  /// Writes [obj] to the current line, unchanged.
+  ///
+  /// Line breaks within [obj] are written as-is, without indentation, and do not start a new
+  /// [CodeBufferLine]. Use [writeln] to end lines if line and column numbers must stay accurate.
   @override
   void write(Object? obj) {
-    var msg = obj.toString();
-    _currentLine ??= _createLine();
-    _currentLine!._buf.write(msg);
-    var end = _currentLine!._end;
-    _currentLine!._end = SourceLocation(
+    _write(obj.toString());
+  }
+
+  void _write(String msg) {
+    var line = _currentLine ??= _createLine();
+    line._buf.write(msg);
+    var end = line._end;
+    line._end = SourceLocation(
       end.offset + msg.length,
       sourceUrl: end.sourceUrl,
       line: end.line,
       column: end.column + msg.length,
     );
     _length += msg.length;
-    _currentLine!._lastSpan = SourceSpan(end, _currentLine!._end, msg);
+    line._lastSpan = SourceSpan(end, line._end, msg);
+  }
+
+  /// Terminates the current line, first creating a blank one, without indentation, if necessary.
+  void _endLine() {
+    _currentLine ??= _createLine(0);
+    _currentLine = null;
   }
 
   @override
   void writeln([Object? obj = '']) {
     if (obj != null && obj != '') write(obj);
-    _currentLine = null;
-    _length++;
+    _endLine();
   }
 
   @override
@@ -203,7 +184,7 @@ class CodeBuffer implements StringBuffer {
     var buf = StringBuffer();
     var i = 0;
 
-    for (var line in lines) {
+    for (var line in _lines) {
       if (i++ > 0) buf.write(newline);
       for (var j = 0; j < line.indentationLevel; j++) {
         buf.write(space);

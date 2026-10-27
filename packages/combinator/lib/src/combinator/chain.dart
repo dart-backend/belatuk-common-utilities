@@ -60,7 +60,14 @@ class _Chain<T> extends ListParser<T> {
     var spans = <FileSpan>[];
     var successful = true;
 
+    // False once a failed element leaves no value that fits [T]. The chain has failed
+    // then, so it gives no value instead of a list with a gap.
+    var complete = true;
+
+    var element = 0;
+
     for (var parser in parsers) {
+      element++;
       var result = parser._parse(args.increaseDepth());
 
       if (!result.successful) {
@@ -84,9 +91,12 @@ class _Chain<T> extends ListParser<T> {
         results.add(value);
       } else if (value == null && null is T) {
         results.add(null as T);
+      } else if (!successful) {
+        // The chain has already failed, so a missing value is not an error.
+        complete = false;
       } else {
         throw StateError(
-          'Element #${results.length + 1} of chain<$T> produced no value. '
+          'Element #$element of chain<$T> produced no value. '
           'Use a nullable type, such as chain<$T?>, when an element can be empty.',
         );
       }
@@ -109,7 +119,7 @@ class _Chain<T> extends ListParser<T> {
       successful,
       errors,
       span: span,
-      value: List<T>.unmodifiable(results),
+      value: complete ? List<T>.unmodifiable(results) : null,
     );
   }
 

@@ -259,7 +259,7 @@ print(expr.parse(SpanScanner('2+3*4')).value); // 14
 
 | Method | Effect |
 | --- | --- |
-| `cache()` | Caches the parser's result at each position during one parse |
+| `cache()` | Returns the parser itself. Every parser's result at each position is already cached during one parse |
 | `maxDepth(depth)` | Fails when the parser is nested more than `depth` levels deep |
 | `safe()` | Turns an exception thrown during parsing into an error. After one exception, the parser always fails |
 | `forward(n)`, `back(n)` | Moves the scanner `n` characters forward or back after a successful match |

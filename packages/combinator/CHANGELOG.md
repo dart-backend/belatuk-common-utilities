@@ -17,8 +17,11 @@
 * **Parsing:** `separatedByComma()` no longer throws a `TypeError` when it matches a comma.
 * **Parsing:** `surroundedByCurlyBraces` and `surroundedBySquareBrackets` give `defaultValue` for empty braces or brackets, instead of throwing a `TypeError`.
 * **Parsing:** `&` and `|` accept a parser of any type, so they no longer throw a `TypeError` at run time when the two parsers' types differ. `|` casts the other parser's values to this parser's type.
-* **Parsing:** `cache()` keeps results for one parse only, so parsing new text with the same parser no longer returns earlier results, and a cached result moves the scanner like a fresh one.
-* **Parsing:** `opt(backtrack: false)` keeps the text consumed by a failed attempt, as documented, instead of always backtracking.
+* **Parsing:** `cache()` returns the parser itself. Every parser's results are already cached for one parse, so parsing new text with a cached parser no longer returns earlier results, and a cached part of a left-recursive rule still grows.
+* **Parsing:** `opt(backtrack: false)` keeps the text consumed by a failed attempt, as documented, instead of always backtracking, and includes that text in its span. `opt` gives no span when the failed attempt consumed nothing.
+* **Parsing:** `chain` with `failFast: false` returns a failed result with no value once an element has failed, instead of throwing a `StateError` for an element without a value.
+* **Parsing:** Left-recursive rules reached while another rule is growing at the same position, including mutually left-recursive rules, also grow, so they parse all of their input.
+* **Performance:** Memoized results are stored by position, so looking one up, and forgetting a position while a left-recursive rule grows, no longer scans every parser's results.
 * **Stringify:** Each call to `stringify` prints references in full again, even into a buffer that was used before or cleared.
 * **Stringify:** A reference that contains itself no longer recurses forever.
 * **Examples:** The `json`, `main`, `calculator`, `basic_auth` and `sexp` examples run, and every interactive example stops at the end of its input instead of crashing.

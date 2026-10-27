@@ -14,8 +14,6 @@ part 'any.dart';
 
 part 'advance.dart';
 
-part 'cache.dart';
-
 part 'cast.dart';
 
 part 'chain.dart';
@@ -74,11 +72,12 @@ abstract class Parser<T> {
     var trampoline = args.trampoline;
     var pos = args.scanner.position;
 
-    if (trampoline.hasMemoized(this, pos)) {
+    var memoized = trampoline._entry(this, pos);
+    if (memoized != null) {
       // Move the scanner to where the memoized parse ended, as the original parse did.
-      var end = trampoline._memoEnds[this]?[pos];
+      var (result, end) = memoized;
       if (end != null) args.scanner.position = end;
-      return trampoline.getMemoized<T>(this, pos);
+      return result as ParseResult<T>;
     }
 
     if (trampoline.isActive(this, pos)) {
@@ -92,14 +91,12 @@ abstract class Parser<T> {
     var result = __parse(args);
     var end = args.scanner.position;
 
-    // Only the outermost left-recursive parser at a position grows its result. Others
-    // found while it grows are parsed again in each of its passes.
     // A failed result has nothing to grow, and leaves the memoized results intact.
-    if (trampoline._leftRecursive.remove((this, pos)) &&
-        result.successful &&
-        trampoline._growingAt.add(pos)) {
+    if (trampoline._leftRecursive.remove((this, pos)) && result.successful) {
       // Grow the seed (Warth et al.): parse again with the last result memoized, so the
-      // recursive call reuses it, for as long as each pass matches more text.
+      // recursive call reuses it, for as long as each pass matches more text. While it
+      // grows, clearing the position keeps its seed for any rule nested inside it.
+      trampoline._growing.add((this, pos));
       while (result.successful) {
         trampoline._forgetAt(pos);
         trampoline._remember(this, pos, result, end);
@@ -111,9 +108,12 @@ abstract class Parser<T> {
         end = nextEnd;
       }
 
+      trampoline._growing.remove((this, pos));
+      // A nested rule may have marked this parser again during growth. It has finished.
+      trampoline._leftRecursive.remove((this, pos));
+
       // Results memoized at this position during growth may depend on an older seed.
       trampoline._forgetAt(pos);
-      trampoline._growingAt.remove(pos);
       args.scanner.position = end;
     }
 
@@ -187,10 +187,11 @@ abstract class Parser<T> {
     SyntaxErrorSeverity severity = SyntaxErrorSeverity.error,
   }) => _Negate<T>(this, errorMessage, severity);
 
-  /// Caches the results of parse attempts at various locations within the source text.
+  /// Returns this parser.
   ///
-  /// Use this to prevent excessive recursion.
-  Parser<T> cache() => _Cache<T>(this);
+  /// Every parser's results are already cached at each position for the length of one
+  /// parse, so this has no effect. It is kept so that existing grammars still compile.
+  Parser<T> cache() => this;
 
   /// Shortcut for [and]. [other] can produce any type of value.
   Parser<T> operator &(Parser other) => and(other);
@@ -389,47 +390,50 @@ abstract class ListParser<T> extends Parser<List<T>> {
 /// Prevents stack overflow in recursive parsers.
 class Trampoline {
   final Map<Parser, Queue<int>> _active = {};
-  final Map<Parser, List<Tuple2<int, ParseResult>>> _memo = {};
 
-  /// Where the scanner was after each memoized parse, by parser and start position.
-  final Map<Parser, Map<int, int>> _memoEnds = {};
+  /// Each memoized result, and where the scanner was after it if known, by start
+  /// position and then by parser, so forgetting a position is a single removal.
+  final Map<int, Map<Parser, (ParseResult, int?)>> _memo = {};
 
   /// The parsers that were entered again at the same position while being parsed.
   final Set<(Parser, int)> _leftRecursive = {};
 
-  /// The positions at which a left-recursive parser is growing its result.
-  final Set<int> _growingAt = {};
+  /// The left-recursive parsers growing their results, with their positions.
+  final Set<(Parser, int)> _growing = {};
+
+  (ParseResult, int?)? _entry(Parser parser, int position) =>
+      _memo[position]?[parser];
 
   void _remember(Parser parser, int position, ParseResult result, int end) {
-    memoize(parser, position, result);
-    _memoEnds.putIfAbsent(parser, () => {})[position] = end;
+    _memo.putIfAbsent(position, () => {})[parser] = (result, end);
   }
 
-  /// Forgets every result memoized at [position].
+  /// Forgets the results memoized at [position], except the seeds of parsers growing there.
   void _forgetAt(int position) {
-    for (var list in _memo.values) {
-      list.removeWhere((t) => t.item1 == position);
-    }
-    for (var ends in _memoEnds.values) {
-      ends.remove(position);
-    }
+    var entries = _memo[position];
+    if (entries == null) return;
+    entries.removeWhere((parser, _) => !_growing.contains((parser, position)));
+    if (entries.isEmpty) _memo.remove(position);
   }
 
-  bool hasMemoized(Parser parser, int position) {
-    var list = _memo[parser];
-    return list?.any((t) => t.item1 == position) == true;
-  }
+  bool hasMemoized(Parser parser, int position) =>
+      _entry(parser, position) != null;
 
+  /// The result memoized for [parser] at [position]. Throws a [StateError] if there is none.
   ParseResult<T> getMemoized<T>(Parser parser, int position) {
-    return _memo[parser]?.firstWhere((t) => t.item1 == position).item2
-        as ParseResult<T>;
+    var entry = _entry(parser, position);
+    if (entry == null) {
+      throw StateError('No result is memoized for $parser at $position.');
+    }
+    return entry.$1 as ParseResult<T>;
   }
 
+  /// Memoizes [result], unless a result is already memoized for [parser] at [position].
   void memoize(Parser parser, int position, ParseResult? result) {
     if (result != null) {
-      var list = _memo.putIfAbsent(parser, () => []);
-      var tuple = Tuple2(position, result);
-      if (!list.contains(tuple)) list.add(tuple);
+      _memo
+          .putIfAbsent(position, () => {})
+          .putIfAbsent(parser, () => (result, null));
     }
   }
 

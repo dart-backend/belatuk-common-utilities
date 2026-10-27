@@ -1,5 +1,9 @@
 part of 'combinator.dart';
 
+/// The span of the text a failed attempt consumed from [start], or `null` if it consumed none.
+FileSpan? _consumedSpan(SpanScanner scanner, LineScannerState start) =>
+    scanner.position == start.position ? null : scanner.spanFrom(start);
+
 class _Opt<T> extends Parser<T> {
   final Parser<T> parser;
   final bool backtrack;
@@ -8,12 +12,22 @@ class _Opt<T> extends Parser<T> {
 
   @override
   ParseResult<T> __parse(ParseArgs args) {
-    var replay = args.scanner.position;
+    var start = args.scanner.state;
     var result = parser._parse(args.increaseDepth());
 
-    if (!result.successful && backtrack) args.scanner.position = replay;
+    if (!result.successful) {
+      if (backtrack) args.scanner.state = start;
+      return ParseResult<T>(
+        args.trampoline,
+        args.scanner,
+        this,
+        true,
+        result.errors,
+        span: backtrack ? null : _consumedSpan(args.scanner, start),
+      );
+    }
 
-    return result.change(parser: this, successful: true);
+    return result.change(parser: this);
   }
 
   @override
@@ -39,16 +53,23 @@ class _ListOpt<T> extends ListParser<T> {
 
   @override
   ParseResult<List<T>> __parse(ParseArgs args) {
-    var replay = args.scanner.position;
+    var start = args.scanner.state;
     var result = parser._parse(args.increaseDepth());
 
-    if (!result.successful && backtrack) args.scanner.position = replay;
+    if (!result.successful) {
+      if (backtrack) args.scanner.state = start;
+      return ParseResult<List<T>>(
+        args.trampoline,
+        args.scanner,
+        this,
+        true,
+        result.errors,
+        span: backtrack ? null : _consumedSpan(args.scanner, start),
+        value: emptyOnFailure ? <T>[] : null,
+      );
+    }
 
-    return result.change(
-      parser: this,
-      successful: true,
-      value: emptyOnFailure ? (result.value ?? <T>[]) : null,
-    );
+    return result.change(parser: this);
   }
 
   @override

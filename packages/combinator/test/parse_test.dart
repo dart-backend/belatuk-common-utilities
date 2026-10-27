@@ -170,4 +170,118 @@ void main() {
       expect(sw.elapsed, lessThan(const Duration(seconds: 5)));
     });
   });
+
+  group('left recursion with other combinators', () {
+    int sum(ParseResult<List> r) => (r.value![0] as int) + (r.value![2] as int);
+
+    test('a cached part of a left-recursive rule still grows', () {
+      var expr = reference<int>();
+      expr.parser = any<int>([
+        chain<dynamic>([expr, match('+'), number]).map(sum).cache(),
+        number,
+      ]);
+      var result = expr.parse(scan('1+2+3'));
+      expect(result.value, 6);
+      expect(result.span?.text, '1+2+3');
+    });
+
+    test('a rule first reached while another grows also grows', () {
+      // list := list ',' item | item ; item := item '.' | number
+      var list = reference<List<int>>(), item = reference<int>();
+      item.parser = any<int>([
+        chain<dynamic>([item, match('.')]).map((r) => (r.value![0] as int) + 1),
+        number,
+      ]);
+      list.parser = any<List<int>>([
+        chain<dynamic>([list, match(','), item])
+            .map((r) => [...r.value![0] as List<int>, r.value![2] as int]),
+        item.map((r) => [r.value!]),
+      ]);
+      expect(list.parse(scan('1..,5,2...')).value, [3, 5, 5]);
+    });
+
+    test('long left-recursive input stays fast', () {
+      var expr = reference<int>();
+      expr.parser = any<int>([
+        chain<dynamic>([expr, match('+'), number]).map(sum),
+        number,
+      ]);
+      var input = List.filled(2000, '1').join('+');
+      var sw = Stopwatch()..start();
+      expect(expr.parse(scan(input)).value, 2000);
+      expect(sw.elapsed, lessThan(const Duration(seconds: 5)));
+    });
+  });
+
+  test('chain with failFast: false fails instead of throwing', () {
+    var word = match<String>('a').value((_) => 'a');
+    var other = match<String>('b').value((_) => 'b');
+    var result = chain<String>([
+      word,
+      other,
+    ], failFast: false).parse(scan('ax'));
+    expect(result.successful, isFalse);
+    expect(result.value, isNull);
+  });
+
+  test('opt(backtrack: false) keeps the consumed text in its span', () {
+    var ab = chain([match('a'), match('b')]);
+    var p = chain<dynamic>([ab.opt(backtrack: false), match('c')]).flatten();
+    expect(p.parse(scan('ac')).value, 'ac');
+  });
+
+  test('mutually left-recursive rules growing at the same position', () {
+    // a := b 'x' | 'a' ; b := b 'y' | a, so a matches 'a' then groups of y* x.
+    var a = reference<String>(), b = reference<String>();
+    a.parser = any<String>([
+      chain<dynamic>([b, match('x')]).map((r) => '(${r.value![0]}x)'),
+      match('a').map((r) => 'a'),
+    ]);
+    b.parser = any<String>([
+      chain<dynamic>([b, match('y')]).map((r) => '[${r.value![0]}y]'),
+      a,
+    ]);
+    for (var input in ['a', 'ax', 'ayx', 'axx', 'axyx', 'ayxyyx']) {
+      expect(a.parse(scan(input)).span?.text, input, reason: input);
+    }
+    expect(a.parse(scan('axyx')).value, '([(ax)y]x)');
+  });
+
+  test('chain with failFast: false does not throw after an element failed', () {
+    var word = match<String>('a').value((_) => 'a');
+    var other = match<String>('b').value((_) => 'b');
+    var empty = match<String>('c').opt();
+    var result = chain<String>([
+      word,
+      other,
+      empty,
+    ], failFast: false).parse(scan('ax'));
+    expect(result.successful, isFalse);
+    expect(result.value, isNull);
+  });
+
+  test('the StateError names the element without a value', () {
+    var word = match<String>('a').value((_) => 'a');
+    expect(
+      () => chain<String>([word, word, match('b')]).parse(scan('aab')),
+      throwsA(
+        isA<StateError>().having((e) => e.message, 'message', contains('#3')),
+      ),
+    );
+  });
+
+  test('opt gives no span when nothing was consumed', () {
+    var ab = chain([match('a'), match('b')]);
+    expect(ab.opt().parse(scan('x')).span, isNull);
+    expect(ab.opt(backtrack: false).parse(scan('x')).span, isNull);
+    expect(ab.opt(backtrack: false).parse(scan('ax')).span?.text, 'a');
+  });
+
+  test('cache() returns the parser itself', () {
+    expect(identical(number.cache(), number), isTrue);
+  });
+
+  test('getMemoized throws a StateError when nothing is memoized', () {
+    expect(() => Trampoline().getMemoized(number, 0), throwsStateError);
+  });
 }

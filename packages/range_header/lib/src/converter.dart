@@ -1,24 +1,29 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
-//import 'dart:io' hide BytesBuilder;
-import 'dart:typed_data';
-
 import 'dart:math';
 
-import 'package:async/async.dart';
 import 'package:charcode/ascii.dart';
 
 import 'range_header.dart';
 
 /// A [StreamTransformer] that uses a parsed [RangeHeader] and transforms an input stream
 /// into one compatible with the `multipart/byte-ranges` specification.
+///
+/// Ranges are written in order of their position in the input, and overlapping ranges are
+/// merged, as RFC 7233 allows, so the input is only read once. Ranges that start past the
+/// end of the input are left out, and ranges that end past it are cut back to its last byte.
 class RangeHeaderTransformer
     extends StreamTransformerBase<List<int>, List<int>> {
   final RangeHeader header;
   final String boundary, mimeType;
   final int totalLength;
 
+  /// The first and last index of each part to write, sorted and without overlaps.
+  late final List<(int, int)> _parts = _computeParts();
+
+  /// Throws an [ArgumentError] if [header] has no ranges, or none of them can be
+  /// satisfied by an input of [totalLength] bytes. In that case, respond with
+  /// `416 Range Not Satisfiable` instead.
   RangeHeaderTransformer(
     this.header,
     this.mimeType,
@@ -28,142 +33,112 @@ class RangeHeaderTransformer
     if (header.items.isEmpty) {
       throw ArgumentError('`header` cannot be null or empty.');
     }
+    if (_parts.isEmpty) {
+      throw ArgumentError(
+        'None of the ranges in `header` can be satisfied by $totalLength bytes.',
+      );
+    }
   }
 
-  /// Computes the content length that will be written to a response, given a stream of the given [totalFileSize].
-  int computeContentLength(int totalFileSize) {
-    var len = 0;
+  List<(int, int)> _computeParts() {
+    var parts = <(int, int)>[];
 
     for (var item in header.items) {
-      if (item.start == -1) {
-        if (item.end == -1) {
-          len += totalFileSize;
-        } else {
-          //len += item.end + 1;
-          len += item.end + 1;
-        }
-      } else if (item.end == -1) {
-        len += totalFileSize - item.start;
-        //len += totalFileSize - item.start - 1;
-      } else {
-        len += item.end - item.start;
-      }
+      var first = item.start == -1
+          ? max(0, totalLength - item.end)
+          : item.start;
+      var last = item.start == -1 || item.end == -1
+          ? totalLength - 1
+          : min(item.end, totalLength - 1);
+      if (first <= last) parts.add((first, last));
+    }
 
-      // Take into consideration the fact that delimiters are written.
-      len += utf8.encode('--$boundary\r\n').length;
-      len += utf8.encode('Content-Type: $mimeType\r\n').length;
-      len += utf8
-          .encode(
-            'Content-Range: ${header.rangeUnit} ${item.toContentRange(totalLength)}/$totalLength\r\n\r\n',
-          )
-          .length;
+    parts.sort((a, b) => a.$1.compareTo(b.$1));
+
+    var merged = <(int, int)>[];
+    for (var part in parts) {
+      if (merged.isNotEmpty && part.$1 <= merged.last.$2) {
+        merged.last = (merged.last.$1, max(merged.last.$2, part.$2));
+      } else {
+        merged.add(part);
+      }
+    }
+
+    return merged;
+  }
+
+  List<int> _partHeader((int, int) part) => utf8.encode(
+    '--$boundary\r\n'
+    'Content-Type: $mimeType\r\n'
+    'Content-Range: ${header.rangeUnit} ${part.$1}-${part.$2}/$totalLength\r\n\r\n',
+  );
+
+  List<int> get _closingBoundary => utf8.encode('--$boundary--\r\n');
+
+  /// Computes the content length that will be written to a response.
+  ///
+  /// [totalFileSize] is optional, and must equal [totalLength] if given.
+  int computeContentLength([int? totalFileSize]) {
+    if (totalFileSize != null && totalFileSize != totalLength) {
+      throw ArgumentError.value(
+        totalFileSize,
+        'totalFileSize',
+        'Must equal totalLength ($totalLength)',
+      );
+    }
+
+    var len = 0;
+
+    for (var part in _parts) {
+      len += _partHeader(part).length;
+      len += part.$2 - part.$1 + 1;
       len += 2; // CRLF
     }
 
-    len += utf8.encode('--$boundary--\r\n').length;
-
-    return len;
+    return len + _closingBoundary.length;
   }
 
   @override
-  Stream<List<int>> bind(Stream<List<int>> stream) {
-    var ctrl = StreamController<List<int>>();
+  Stream<List<int>> bind(Stream<List<int>> stream) async* {
+    var parts = _parts;
+    var i = 0;
+    var position = 0;
+    var started = false;
 
-    Future(() async {
-      var index = 0;
-      var enqueued = Queue<List<int>>();
-      var q = StreamQueue(stream);
+    // Breaking out of this loop cancels the subscription to the input.
+    await for (var chunk in stream) {
+      var chunkEnd = position + chunk.length;
 
-      Future<List<int>> absorb(int length) async {
-        var out = BytesBuilder();
+      while (i < parts.length && parts[i].$1 < chunkEnd) {
+        var (first, last) = parts[i];
 
-        while (out.length < length) {
-          var remaining = length - out.length;
-
-          while (out.length < length && enqueued.isNotEmpty) {
-            remaining = length - out.length;
-            var blob = enqueued.removeFirst();
-
-            if (blob.length > remaining) {
-              enqueued.addFirst(blob.skip(remaining).toList());
-              blob = blob.take(remaining).toList();
-            }
-
-            out.add(blob);
-            index += blob.length;
-          }
-
-          if (out.length < length && await q.hasNext) {
-            var blob = await q.next;
-            remaining = length - out.length;
-
-            if (blob.length > remaining) {
-              enqueued.addFirst(blob.skip(remaining).toList());
-              blob = blob.take(remaining).toList();
-            }
-
-            out.add(blob);
-            index += blob.length;
-          }
-
-          // If we get this far, and the stream is EMPTY, the user requested
-          // too many bytes.
-          if (out.length < length && enqueued.isEmpty && !(await q.hasNext)) {
-            throw StateError(
-              'The range denoted is bigger than the size of the input stream.',
-            );
-          }
+        if (!started) {
+          yield _partHeader(parts[i]);
+          started = true;
         }
 
-        return out.takeBytes();
+        var from = max(first, position) - position;
+        var to = min(last + 1, chunkEnd) - position;
+        if (to > from) yield chunk.sublist(from, to);
+
+        // Stop if this part continues into the next chunk.
+        if (last >= chunkEnd) break;
+        yield const [$cr, $lf];
+        started = false;
+        i++;
       }
 
-      for (var item in header.items) {
-        var chunk = BytesBuilder();
+      position = chunkEnd;
+      if (i == parts.length) break;
+    }
 
-        // Skip until we reach the start index.
-        while (index < item.start) {
-          var remaining = item.start - index;
-          await absorb(remaining);
-        }
+    if (i < parts.length) {
+      throw StateError(
+        'The input stream ended after $position bytes, before the requested ranges.',
+      );
+    }
 
-        // Next, absorb until we reach the end.
-        if (item.end == -1) {
-          while (enqueued.isNotEmpty) {
-            chunk.add(enqueued.removeFirst());
-          }
-          while (await q.hasNext) {
-            chunk.add(await q.next);
-          }
-        } else {
-          var remaining = item.end - index;
-          chunk.add(await absorb(remaining));
-        }
-
-        // Next, write the boundary and data.
-        ctrl.add(utf8.encode('--$boundary\r\n'));
-        ctrl.add(utf8.encode('Content-Type: $mimeType\r\n'));
-        ctrl.add(
-          utf8.encode(
-            'Content-Range: ${header.rangeUnit} ${item.toContentRange(totalLength)}/$totalLength\r\n\r\n',
-          ),
-        );
-        ctrl.add(chunk.takeBytes());
-        ctrl.add(const [$cr, $lf]);
-
-        // If this range was unbounded, don't bother looping any further.
-        if (item.end == -1) break;
-      }
-
-      ctrl.add(utf8.encode('--$boundary--\r\n'));
-
-      await ctrl.close();
-    }).catchError((e) {
-      ctrl.addError(e as Object);
-      return null;
-    });
-
-    return ctrl.stream;
+    yield _closingBoundary;
   }
 }
 

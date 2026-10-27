@@ -12,11 +12,11 @@ void main() {
     expect([
       ua.isChrome,
       ua.isWebKit,
-      ua.isSafari,
       ua.isDesktop,
       ua.isMacOS,
     ], everyElement(isTrue));
     expect([
+      ua.isSafari,
       ua.isFirefox,
       ua.isIE,
       ua.isOpera,

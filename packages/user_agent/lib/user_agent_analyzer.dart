@@ -2,11 +2,6 @@ library;
 
 /// Utils for device detection.
 class UserAgent {
-  bool _isChrome = false;
-  bool _isOpera = false;
-  bool _isIE = false;
-  bool _isFirefox = false;
-  bool _isWebKit = false;
   String? _cachedCssPrefix;
   String? _cachedPropertyPrefix;
 
@@ -98,7 +93,6 @@ class UserAgent {
     'wapr',
     'webc',
     'winw',
-    'winw',
     'xda ',
     'xda-',
   ];
@@ -130,6 +124,10 @@ class UserAgent {
     'windows ce',
   ];
 
+  /// Keywords from [knownMobileUserAgentKeywords] short enough to appear inside other words,
+  /// so they only match at the start of a word, as in `WAP2.0` but not `SwapBrowser`.
+  static const Set<String> _wordStartKeywords = {'mmp', 'palm', 'psp', 'wap'};
+
   static const List<String> knownTabletUserAgentKeywords = [
     'ipad',
     'playbook',
@@ -142,15 +140,44 @@ class UserAgent {
   /// Determines if the user agent string contains the desired string. Case-insensitive.
   bool contains(String needle) => _lowerValue.contains(needle.toLowerCase());
 
-  bool get isDesktop => isMacOS || (!isMobile && !isTablet);
+  /// Determines if the user agent string contains [word] at the start of a word. Case-insensitive.
+  bool _containsWordStart(String word) =>
+      RegExp('(^|[^a-z])${RegExp.escape(word.toLowerCase())}')
+          .hasMatch(_lowerValue);
 
-  bool get isTablet => knownTabletUserAgentKeywords.any(contains);
+  bool get isDesktop => !isMobile && !isTablet;
 
-  bool get isMobile => knownMobileUserAgentKeywords.any(contains);
+  bool get isTablet =>
+      knownTabletUserAgentKeywords.any(contains) ||
+      isAndroidTablet ||
+      isBlackberryTablet;
 
-  bool get isMacOS => contains('Macintosh') || contains('Mac OS X');
+  bool get isMobile =>
+      knownMobileUserAgentKeywords.any(
+        (k) => _wordStartKeywords.contains(k)
+            ? _containsWordStart(k)
+            : contains(k),
+      ) ||
+      (_lowerValue.length >= 4 &&
+          knownMobileUserAgentPrefixes.contains(_lowerValue.substring(0, 4)));
 
-  bool get isSafari => contains('Safari');
+  /// Determines if the current device is an iPhone, iPad or iPod.
+  ///
+  /// iPads that request desktop sites send a macOS user agent, and cannot be told apart from a Mac.
+  bool get isIOS => contains('iphone') || contains('ipad') || contains('ipod');
+
+  bool get isMacOS => (contains('Macintosh') || contains('Mac OS X')) && !isIOS;
+
+  /// Determines if the current device is running Safari, and not another browser built on WebKit.
+  bool get isSafari =>
+      value.contains('Safari') &&
+      !value.contains('Chrome') &&
+      !value.contains('Chromium') &&
+      !value.contains('CriOS') &&
+      !value.contains('FxiOS') &&
+      !value.contains('EdgiOS') &&
+      !value.contains('OPiOS') &&
+      !isAndroid;
 
   bool get isAndroid => contains('android');
 
@@ -165,41 +192,47 @@ class UserAgent {
   bool get isWindowsTablet => isWindows && contains('touch');
 
   bool get isBlackberry =>
-      contains('blackberry') || contains('bb10') || contains('rim');
+      contains('blackberry') || contains('bb10') || contains('rim tablet');
 
   bool get isBlackberryPhone => isBlackberry && !contains('tablet');
 
   bool get isBlackberryTablet => isBlackberry && contains('tablet');
 
-  /// Determines if the current device is running Chrome.
-  bool get isChrome {
-    _isChrome = value.contains('Chrome', 0);
-    return _isChrome;
-  }
+  /// Determines if the current device is running Chrome, including Chrome on iOS.
+  ///
+  /// Other browsers built on Chromium, such as Edge, Opera and Samsung Internet, are not Chrome.
+  bool get isChrome =>
+      (value.contains('Chrome') || value.contains('CriOS')) &&
+      !isEdge &&
+      !isOpera &&
+      !value.contains('SamsungBrowser');
+
+  /// Determines if the current device is running Microsoft Edge.
+  bool get isEdge =>
+      value.contains('Edg/') ||
+      value.contains('Edge/') ||
+      value.contains('EdgA/') ||
+      value.contains('EdgiOS/');
 
   /// Determines if the current device is running Opera.
-  bool get isOpera {
-    _isOpera = value.contains('Opera', 0);
-    return _isOpera;
-  }
+  bool get isOpera =>
+      value.contains('Opera') ||
+      value.contains('OPR/') ||
+      value.contains('OPiOS/');
 
   /// Determines if the current device is running Internet Explorer.
-  bool get isIE {
-    _isIE = !isOpera && value.contains('Trident/', 0);
-    return _isIE;
-  }
+  bool get isIE =>
+      !isOpera && (value.contains('Trident/') || value.contains('MSIE '));
 
-  /// Determines if the current device is running Firefox.
-  bool get isFirefox {
-    _isFirefox = value.contains('Firefox', 0);
-    return _isFirefox;
-  }
+  /// Determines if the current device is running Firefox, including Firefox on iOS.
+  bool get isFirefox => value.contains('Firefox') || value.contains('FxiOS');
 
-  /// Determines if the current device is running WebKit.
-  bool get isWebKit {
-    _isWebKit = !isOpera && value.contains('WebKit', 0);
-    return _isWebKit;
-  }
+  /// Determines if the current device is running WebKit, or Blink, which is built on it.
+  bool get isWebKit => value.contains('WebKit');
+
+  /// Opera before version 15 used its own Presto engine, with its own CSS prefix.
+  bool get _isPresto =>
+      value.contains('Presto') || (value.contains('Opera') && !isWebKit);
 
   /// Gets the CSS property prefix for the current platform.
   String get cssPrefix {
@@ -209,7 +242,7 @@ class UserAgent {
       prefix = '-moz-';
     } else if (isIE) {
       prefix = '-ms-';
-    } else if (isOpera) {
+    } else if (_isPresto) {
       prefix = '-o-';
     } else {
       prefix = '-webkit-';
@@ -225,7 +258,7 @@ class UserAgent {
       prefix = 'moz';
     } else if (isIE) {
       prefix = 'ms';
-    } else if (isOpera) {
+    } else if (_isPresto) {
       prefix = 'o';
     } else {
       prefix = 'webkit';

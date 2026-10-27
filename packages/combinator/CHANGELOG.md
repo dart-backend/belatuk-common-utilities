@@ -5,13 +5,23 @@
 ### Breaking changes in 6.0.0
 
 * **Breaking:** Requires `belatuk_code_buffer` 6.0.0, which `Parser.stringify` takes. Its `length`, span offsets and `writeln()` behave differently, as described in its changelog.
-* **Breaking:** `Reference.printed` is removed. Each `CodeBuffer` now tracks which references it has printed.
+* **Breaking:** `chain`, `then` and the `tupleN` functions give `null` for an element without a value, instead of the string `'NULL'`. A `chain` with a non-nullable type, such as `chain<String>`, throws a `StateError` when an element has no value, so use a nullable type, such as `chain<String?>`, when that can happen.
+* **Breaking:** `star()` gives an empty list when nothing matches, instead of `null`.
+* **Breaking:** Left-recursive rules, such as `sum := sum '+' number | number`, parse all of their input and group from the left, instead of stopping after one step, so `1+2+3` is no longer parsed as `1+2`. A grammar that was left-recursive by accident, and relied on that rule failing, can now parse differently. `any` and `longest` no longer skip an alternative that is already being parsed at the same position; it fails there instead, as before.
+* **Breaking:** `stringify` numbers each reference, printing it as `reference #1 (...)` the first time and as `reference #1 (printed above)` after that, instead of writing `(previously printed reference)`.
+* **Breaking:** `Reference.printed` is removed. Each call to `stringify` tracks the references it has printed.
 
 ### Fixes in 6.0.0
 
-* **Stringify:** A reference is printed in full the first time, and `(previously printed reference)` is only written when it appears again.
-* **Stringify:** Calling `stringify` again with a new `CodeBuffer` prints references in full, instead of only the marker.
+* **Parsing:** A memoized result moves the scanner to where the original parse ended, so alternatives that start with the same parser, such as `any([chain([a, b]), chain([a, c])])`, parse correctly.
+* **Parsing:** `separatedByComma()` no longer throws a `TypeError` when it matches a comma.
+* **Parsing:** `surroundedByCurlyBraces` and `surroundedBySquareBrackets` give `defaultValue` for empty braces or brackets, instead of throwing a `TypeError`.
+* **Parsing:** `&` and `|` accept a parser of any type, so they no longer throw a `TypeError` at run time when the two parsers' types differ. `|` casts the other parser's values to this parser's type.
+* **Parsing:** `cache()` keeps results for one parse only, so parsing new text with the same parser no longer returns earlier results, and a cached result moves the scanner like a fresh one.
+* **Parsing:** `opt(backtrack: false)` keeps the text consumed by a failed attempt, as documented, instead of always backtracking.
+* **Stringify:** Each call to `stringify` prints references in full again, even into a buffer that was used before or cleared.
 * **Stringify:** A reference that contains itself no longer recurses forever.
+* **Examples:** The `json`, `main`, `calculator`, `basic_auth` and `sexp` examples run, and every interactive example stops at the end of its input instead of crashing.
 
 ## 5.5.0
 

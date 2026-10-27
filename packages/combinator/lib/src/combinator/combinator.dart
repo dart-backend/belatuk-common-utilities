@@ -71,20 +71,54 @@ abstract class Parser<T> {
   ParseResult<T> __parse(ParseArgs args);
 
   ParseResult<T> _parse(ParseArgs args) {
+    var trampoline = args.trampoline;
     var pos = args.scanner.position;
 
-    if (args.trampoline.hasMemoized(this, pos)) {
-      return args.trampoline.getMemoized<T>(this, pos);
+    if (trampoline.hasMemoized(this, pos)) {
+      // Move the scanner to where the memoized parse ended, as the original parse did.
+      var end = trampoline._memoEnds[this]?[pos];
+      if (end != null) args.scanner.position = end;
+      return trampoline.getMemoized<T>(this, pos);
     }
 
-    if (args.trampoline.isActive(this, pos)) {
-      return ParseResult(args.trampoline, args.scanner, this, false, []);
+    if (trampoline.isActive(this, pos)) {
+      // Left recursion: this parser was entered again without consuming any text.
+      // Fail for now, and grow the result once the outer parse finishes.
+      trampoline._leftRecursive.add((this, pos));
+      return ParseResult(trampoline, args.scanner, this, false, []);
     }
 
-    args.trampoline.enter(this, pos);
+    trampoline.enter(this, pos);
     var result = __parse(args);
-    args.trampoline.memoize(this, pos, result);
-    args.trampoline.exit(this);
+    var end = args.scanner.position;
+
+    // Only the outermost left-recursive parser at a position grows its result. Others
+    // found while it grows are parsed again in each of its passes.
+    // A failed result has nothing to grow, and leaves the memoized results intact.
+    if (trampoline._leftRecursive.remove((this, pos)) &&
+        result.successful &&
+        trampoline._growingAt.add(pos)) {
+      // Grow the seed (Warth et al.): parse again with the last result memoized, so the
+      // recursive call reuses it, for as long as each pass matches more text.
+      while (result.successful) {
+        trampoline._forgetAt(pos);
+        trampoline._remember(this, pos, result, end);
+        args.scanner.position = pos;
+        var next = __parse(args);
+        var nextEnd = args.scanner.position;
+        if (!next.successful || nextEnd <= end) break;
+        result = next;
+        end = nextEnd;
+      }
+
+      // Results memoized at this position during growth may depend on an older seed.
+      trampoline._forgetAt(pos);
+      trampoline._growingAt.remove(pos);
+      args.scanner.position = end;
+    }
+
+    trampoline._remember(this, pos, result, end);
+    trampoline.exit(this);
     return result;
   }
 
@@ -158,7 +192,8 @@ abstract class Parser<T> {
   /// Use this to prevent excessive recursion.
   Parser<T> cache() => _Cache<T>(this);
 
-  Parser<T> operator &(Parser<T> other) => and(other);
+  /// Shortcut for [and]. [other] can produce any type of value.
+  Parser<T> operator &(Parser other) => and(other);
 
   /// Consumes `this` and another parser, but only considers the result of `this` parser.
   Parser<T> and(Parser other) => then(other).change<T>((r) {
@@ -173,10 +208,17 @@ abstract class Parser<T> {
     );
   });
 
-  Parser<T> operator |(Parser<T> other) => or(other);
+  /// Shortcut for [or].
+  Parser<T> operator |(Parser other) => or(other);
 
-  /// Shortcut for [or]-ing two parsers.
-  Parser<T> or<U>(Parser<T> other) => any<T>([this, other]);
+  /// Matches either this parser or [other], trying this one first.
+  ///
+  /// If [other] is not a `Parser<T>`, its values are cast to [T], and a value that is
+  /// not a [T] throws a [TypeError] when parsed.
+  Parser<T> or<U>(Parser other) => any<T>([
+    this,
+    other is Parser<T> ? other : other.castDynamic().cast<T>(),
+  ]);
 
   /// Parses this sequence one or more times.
   ListParser<T> plus() => times(1, exact: false);
@@ -195,8 +237,7 @@ abstract class Parser<T> {
     severity ?? SyntaxErrorSeverity.error,
   );
 
-  Parser<List<T>> separatedByComma() =>
-      separatedBy(match<List<T>>(',').space());
+  Parser<List<T>> separatedByComma() => separatedBy(match<String>(',').space());
 
   /// Expects to see an infinite amounts of the pattern, separated by the [other] pattern.
   ///
@@ -210,7 +251,7 @@ abstract class Parser<T> {
       }
       var preceding = v.isEmpty ? [] : (v[0] == null ? [] : [v[0]]);
       var out = List<T>.from(preceding);
-      if (v[1] != null && v[1] != 'NULL') {
+      if (v[1] != null) {
         v[1].forEach((element) {
           out.add(element as T);
         });
@@ -248,8 +289,13 @@ abstract class Parser<T> {
   Parser<T> space() => trail(RegExp(r'[ \n\r\t]+'));
 
   /// Consumes 0 or more instance(s) of this parser.
-  ListParser<T> star({bool backtrack = true}) =>
-      times(1, exact: false, backtrack: backtrack).opt();
+  ///
+  /// The value is an empty list when there are none.
+  ListParser<T> star({bool backtrack = true}) => _ListOpt(
+    times(1, exact: false, backtrack: backtrack),
+    true,
+    emptyOnFailure: true,
+  );
 
   /// Shortcut for [chain]-ing two parsers together.
   ListParser<dynamic> then(Parser other) => chain<dynamic>([this, other]);
@@ -297,8 +343,19 @@ abstract class Parser<T> {
     return _Value<T>(this, f);
   }
 
-  /// Prints a representation of this parser, ideally without causing a stack overflow.
-  void stringify(CodeBuffer buffer);
+  /// Prints a representation of this parser into [buffer].
+  ///
+  /// Each [Reference] is printed in full the first time it appears in this call, numbered,
+  /// and by its number after that, so recursive grammars do not overflow the stack.
+  void stringify(CodeBuffer buffer) => _stringify(buffer, _StringifyContext());
+
+  void _stringify(CodeBuffer buffer, _StringifyContext context);
+}
+
+/// The state of one [Parser.stringify] call.
+class _StringifyContext {
+  /// The number of each [Reference] printed so far.
+  final Map<Reference, int> referenceIds = {};
 }
 
 /// A [Parser] that produces [List]s of a type [T].
@@ -333,6 +390,30 @@ abstract class ListParser<T> extends Parser<List<T>> {
 class Trampoline {
   final Map<Parser, Queue<int>> _active = {};
   final Map<Parser, List<Tuple2<int, ParseResult>>> _memo = {};
+
+  /// Where the scanner was after each memoized parse, by parser and start position.
+  final Map<Parser, Map<int, int>> _memoEnds = {};
+
+  /// The parsers that were entered again at the same position while being parsed.
+  final Set<(Parser, int)> _leftRecursive = {};
+
+  /// The positions at which a left-recursive parser is growing its result.
+  final Set<int> _growingAt = {};
+
+  void _remember(Parser parser, int position, ParseResult result, int end) {
+    memoize(parser, position, result);
+    _memoEnds.putIfAbsent(parser, () => {})[position] = end;
+  }
+
+  /// Forgets every result memoized at [position].
+  void _forgetAt(int position) {
+    for (var list in _memo.values) {
+      list.removeWhere((t) => t.item1 == position);
+    }
+    for (var ends in _memoEnds.values) {
+      ends.remove(position);
+    }
+  }
 
   bool hasMemoized(Parser parser, int position) {
     var list = _memo[parser];

@@ -44,7 +44,11 @@ void main() {
 
   var atom = number.castDynamic().or(id);
 
-  var list = expr.space().times(2, exact: false).map((r) {
+  // A list is two or more items. An item is not itself a bare list, so this rule is not
+  // left-recursive: nested lists must be parenthesized.
+  var item = longest([atom, expr.parenthesized()]);
+
+  var list = item.space().times(2, exact: false).map((r) {
     try {
       var out = [];
       var q = Queue.from(r.value!.reversed);
@@ -54,7 +58,7 @@ void main() {
         if (current is! Tuple2) {
           out.insert(0, current);
         } else {
-          var args = [];
+          var args = <num>[];
           for (var i = 0; i < (current.item1 as num); i++) {
             args.add(out.removeLast());
           }
@@ -76,7 +80,8 @@ void main() {
 
   while (true) {
     stdout.write('> ');
-    var line = stdin.readLineSync()!;
+    var line = stdin.readLineSync();
+    if (line == null) break;
     var result = expr.parse(SpanScanner(line));
 
     if (result.errors.isNotEmpty) {

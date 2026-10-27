@@ -18,32 +18,52 @@ void main() {
   });
 
   group('reference', () {
-    test('prints its parser the first time, without a marker', () {
-      var r = reference<String>()..parser = match('a').map((r) => 'a');
-      expect(stringify(r), isNot(contains('previously printed reference')));
-      expect(stringify(r), contains('match(a)'));
+    test('prints its parser the first time, numbered', () {
+      var r = reference<String>()..parser = match('a');
+      expect(stringify(r), 'reference #1 (\n  match(a)\n)');
     });
 
-    test('prints a marker when printed again in the same buffer', () {
-      var r = reference<String>()..parser = match('a').map((r) => 'a');
+    test('prints only its number when it appears again', () {
+      var r = reference<String>()..parser = match('a');
       var output = stringify(any([r, r]));
       expect('match(a)'.allMatches(output), hasLength(1));
-      expect('(previously printed reference)'.allMatches(output), hasLength(1));
+      expect(output, contains('reference #1 (printed above)'));
     });
 
-    test('prints in full again in a new buffer', () {
-      var r = reference<String>()..parser = match('a').map((r) => 'a');
+    test('numbers different references separately', () {
+      var a = reference<String>()..parser = match('a');
+      var b = reference<String>()..parser = match('b');
+      var output = stringify(any([a, b, a, b]));
+      expect(output, contains('reference #1 (printed above)'));
+      expect(output, contains('reference #2 (printed above)'));
+    });
+
+    test('prints in full again in each call', () {
+      var r = reference<String>()..parser = match('a');
       expect(stringify(r), stringify(r));
     });
 
-    test('an undefined reference prints no marker', () {
+    test('prints in full again in the same buffer, and after clear()', () {
+      var r = reference<String>()..parser = match('a');
+      var buffer = CodeBuffer();
+      r.stringify(buffer);
+      r.stringify(buffer);
+      expect('match(a)'.allMatches(buffer.toString()), hasLength(2));
+      buffer.clear();
+      r.stringify(buffer);
+      expect(buffer.toString(), 'reference #1 (\n  match(a)\n)');
+    });
+
+    test('an undefined reference prints no number', () {
       expect(stringify(reference<String>()), '(undefined reference <String>)');
     });
 
-    test('a reference containing itself does not recurse forever', () {
+    test('a reference containing itself is printed once', () {
       var r = reference<String>();
-      r.parser = any([match('a').map((r) => 'a'), r]);
-      expect(stringify(r), contains('(previously printed reference)'));
+      r.parser = any([match('a'), r]);
+      var output = stringify(r);
+      expect('match(a)'.allMatches(output), hasLength(1));
+      expect(output, contains('reference #1 (printed above)'));
     });
   });
 }

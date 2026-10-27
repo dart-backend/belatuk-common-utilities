@@ -15,7 +15,7 @@ class Recursion<T> {
 
   Parser<T> precedence(int p) =>  _Precedence(this, p);
 
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('recursion (')
       ..indent()
@@ -129,11 +129,11 @@ class _Precedence<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('precedence($precedence) (')
       ..indent();
-    r.stringify(buffer);
+    r._stringify(buffer, context);
     buffer
       ..outdent()
       ..writeln(')');

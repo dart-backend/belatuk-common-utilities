@@ -14,11 +14,11 @@ class _Advance<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('advance($amount) (')
       ..indent();
-    parser.stringify(buffer);
+    parser._stringify(buffer, context);
     buffer
       ..outdent()
       ..writeln(')');

@@ -3,6 +3,10 @@ part of 'combinator.dart';
 /// Expects to parse a sequence of [parsers].
 ///
 /// If [failFast] is `true` (default), then the first failure to parse will abort the parse.
+///
+/// The value has one element per parser, in order. An element is `null` when its parser
+/// produced no value, as an optional parser can, so use a nullable [T], such as `int?`,
+/// when that can happen. A non-nullable [T] then throws a [StateError].
 ListParser<T> chain<T>(
   Iterable<Parser<T>> parsers, {
   bool failFast = true,
@@ -37,8 +41,8 @@ class _Alt<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
-    parser.stringify(buffer);
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
+    parser._stringify(buffer, context);
   }
 }
 
@@ -75,10 +79,16 @@ class _Chain<T> extends ListParser<T> {
         successful = false;
       }
 
-      if (result.value != null) {
-        results.add(result.value as T);
+      var value = result.value;
+      if (value is T) {
+        results.add(value);
+      } else if (value == null && null is T) {
+        results.add(null as T);
       } else {
-        results.add('NULL' as T);
+        throw StateError(
+          'Element #${results.length + 1} of chain<$T> produced no value. '
+          'Use a nullable type, such as chain<$T?>, when an element can be empty.',
+        );
       }
 
       if (result.span != null) {
@@ -104,7 +114,7 @@ class _Chain<T> extends ListParser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('chain(${parsers.length}) (')
       ..indent();
@@ -114,7 +124,7 @@ class _Chain<T> extends ListParser<T> {
       buffer
         ..writeln('#${i++}:')
         ..indent();
-      parser.stringify(buffer);
+      parser._stringify(buffer, context);
       buffer.outdent();
     }
 

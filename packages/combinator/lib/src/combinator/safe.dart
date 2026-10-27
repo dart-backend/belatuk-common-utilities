@@ -34,12 +34,12 @@ class _Safe<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     var t = _triggered ? 'triggered' : 'not triggered';
     buffer
       ..writeln('safe($t) (')
       ..indent();
-    parser.stringify(buffer);
+    parser._stringify(buffer, context);
     buffer
       ..outdent()
       ..writeln(')');

@@ -25,7 +25,8 @@ final Parser queryString = pairs.opt();
 void main() {
   while (true) {
     stdout.write('Enter a query string: ');
-    var line = stdin.readLineSync()!;
+    var line = stdin.readLineSync();
+    if (line == null) break;
     var scanner = SpanScanner(line, sourceUrl: 'stdin');
     var result = pairs.parse(scanner);
 

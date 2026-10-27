@@ -2,9 +2,6 @@ part of 'combinator.dart';
 
 Reference<T> reference<T>() => Reference<T>._();
 
-/// The references already printed into each [CodeBuffer], so each one is printed in full only once.
-final Expando<Set<Reference>> _printedReferences = Expando();
-
 class Reference<T> extends Parser<T> {
   Parser<T>? _parser;
 
@@ -34,15 +31,26 @@ class Reference<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
-    var printed = _printedReferences[buffer] ??= {};
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     if (_parser == null) {
       buffer.writeln('(undefined reference <$T>)');
-    } else if (printed.add(this)) {
-      // Marked before printing, so a reference that contains itself does not recurse forever.
-      _parser!.stringify(buffer);
-    } else {
-      buffer.writeln('(previously printed reference)');
+      return;
     }
+
+    var id = context.referenceIds[this];
+    if (id != null) {
+      buffer.writeln('reference #$id (printed above)');
+      return;
+    }
+
+    // Numbered before printing, so a reference that contains itself does not recurse forever.
+    id = context.referenceIds[this] = context.referenceIds.length + 1;
+    buffer
+      ..writeln('reference #$id (')
+      ..indent();
+    _parser!._stringify(buffer, context);
+    buffer
+      ..outdent()
+      ..writeln(')');
   }
 }

@@ -20,19 +20,13 @@ class _Longest<T> extends Parser<T> {
 
   @override
   ParseResult<T> _parse(ParseArgs args) {
-    var inactive = parsers.toList().where(
-      (p) => !args.trampoline.isActive(p, args.scanner.position),
-    );
-
-    if (inactive.isEmpty) {
-      return ParseResult(args.trampoline, args.scanner, this, false, []);
-    }
-
     var replay = args.scanner.position;
     var errors = <SyntaxError>[];
     var results = <ParseResult<T>>[];
 
-    for (var parser in inactive) {
+    // An alternative that is already being parsed at this position fails in Parser._parse,
+    // which also detects the left recursion and grows its result.
+    for (var parser in parsers) {
       var result = parser._parse(args.increaseDepth());
 
       if (result.successful && result.span != null) {
@@ -101,7 +95,7 @@ class _Longest<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('longest(${parsers.length}) (')
       ..indent();
@@ -111,7 +105,7 @@ class _Longest<T> extends Parser<T> {
       buffer
         ..writeln('#${i++}:')
         ..indent();
-      parser.stringify(buffer);
+      parser._stringify(buffer, context);
       buffer.outdent();
     }
 

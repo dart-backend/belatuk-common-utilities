@@ -28,12 +28,12 @@ Parser jsonGrammar() {
     string.space(),
     match(':').space(),
     expr.error(errorMessage: 'Missing expression.'),
-  ]).castDynamic().cast<Map>().value((r) => {r.value![0]: r.value![2]});
+  ]).map<Map>((r) => {r.value![0]: r.value![2]});
 
-  // Parse an object.
+  // Parse an object, merging its key-value pairs into one map.
   var object = keyValuePair
       .separatedByComma()
-      .castDynamic()
+      .map<Map>((r) => {for (var pair in r.value!) ...pair})
       .surroundedByCurlyBraces(defaultValue: {});
 
   expr.parser = longest([
@@ -51,7 +51,8 @@ void main() {
 
   while (true) {
     stdout.write('Enter some JSON: ');
-    var line = stdin.readLineSync()!;
+    var line = stdin.readLineSync();
+    if (line == null) break;
     var scanner = SpanScanner(line, sourceUrl: 'stdin');
     var result = json.parse(scanner);
 

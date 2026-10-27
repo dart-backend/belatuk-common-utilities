@@ -40,11 +40,11 @@ class _Index<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('index($index) (')
       ..indent();
-    parser.stringify(buffer);
+    parser._stringify(buffer, context);
     buffer
       ..outdent()
       ..writeln(')');

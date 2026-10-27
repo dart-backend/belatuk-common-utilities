@@ -30,18 +30,12 @@ class _Any<T> extends Parser<T> {
 
   @override
   ParseResult<T> _parse(ParseArgs args) {
-    var inactive = parsers.where(
-      (p) => !args.trampoline.isActive(p, args.scanner.position),
-    );
-
-    if (inactive.isEmpty) {
-      return ParseResult(args.trampoline, args.scanner, this, false, []);
-    }
-
     var errors = <SyntaxError>[];
     var replay = args.scanner.position;
 
-    for (var parser in inactive) {
+    // An alternative that is already being parsed at this position fails in Parser._parse,
+    // which also detects the left recursion and grows its result.
+    for (var parser in parsers) {
       var result = parser._parse(args.increaseDepth());
 
       if (result.successful) {
@@ -73,7 +67,7 @@ class _Any<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('any(${parsers.length}) (')
       ..indent();
@@ -83,7 +77,7 @@ class _Any<T> extends Parser<T> {
       buffer
         ..writeln('#${i++}:')
         ..indent();
-      parser.stringify(buffer);
+      parser._stringify(buffer, context);
       buffer.outdent();
     }
 

@@ -35,11 +35,11 @@ class _Reduce<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('reduce($combine) (')
       ..indent();
-    parser.stringify(buffer);
+    parser._stringify(buffer, context);
     buffer
       ..outdent()
       ..writeln(')');

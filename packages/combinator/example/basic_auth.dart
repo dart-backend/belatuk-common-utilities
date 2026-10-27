@@ -15,10 +15,12 @@ final Parser<String> string = match<String>(
 ).value((r) => r.span!.text);
 
 /// Transforms `{username}:{password}` to `{"username": username, "password": password}`.
+///
+/// The chain's type is nullable, because the `:` and an empty username or password have no value.
 final Parser<Map<String, String>> credentials =
-    chain<String>([string.opt(), match<String>(':'), string.opt()])
+    chain<String?>([string.opt(), match<String>(':'), string.opt()])
         .map<Map<String, String>>(
-          (r) => {'username': r.value![0], 'password': r.value![2]},
+          (r) => {'username': r.value![0] ?? '', 'password': r.value![2] ?? ''},
         );
 
 /// We can actually embed a parser within another parser.
@@ -42,7 +44,8 @@ final Parser basicAuth = basic.then(credentialString).index(1);
 void main() {
   while (true) {
     stdout.write('Enter a basic auth value: ');
-    var line = stdin.readLineSync()!;
+    var line = stdin.readLineSync();
+    if (line == null) break;
     var scanner = SpanScanner(line, sourceUrl: 'stdin');
     var result = basicAuth.parse(scanner);
 

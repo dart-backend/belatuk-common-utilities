@@ -21,11 +21,8 @@ Parser<num> calculatorGrammar() {
 
   void registerBinary(String op, num Function(num, num) f) {
     alternatives.add(
-      chain<num>([
-        expr.space(),
-        match<void>(op).space() as Parser<num>,
-        expr.space(),
-      ]).map((r) => f(r.value![0], r.value![2])),
+      chain<dynamic>([expr.space(), match(op).space(), expr.space()])
+          .map((r) => f(r.value![0] as num, r.value![2] as num)),
     );
   }
 
@@ -51,7 +48,8 @@ void main() {
 
   while (true) {
     stdout.write('Enter an expression: ');
-    var line = stdin.readLineSync()!;
+    var line = stdin.readLineSync();
+    if (line == null) break;
     var scanner = SpanScanner(line, sourceUrl: 'stdin');
     var result = calculator.parse(scanner);
 

@@ -77,12 +77,12 @@ print(length.parse(SpanScanner('hello')).value); // 5
 
 ## Sequences
 
-`chain` matches parsers one after another, and its value is the list of their values. A parser without a value adds the string `'NULL'` to the list. `then` chains two parsers.
+`chain` matches parsers one after another, and its value is the list of their values. A parser without a value, such as `match` or an optional parser that matched nothing, adds `null` to the list. Give `chain` a nullable type, such as `chain<int?>`, when that can happen: with a non-nullable type, it throws a `StateError` that says so. `then` chains two parsers.
 
 ```dart
 var name = match<String>(RegExp(r'[a-z]+')).value((r) => r.span!.text);
 var assignment = chain([name.space(), match('=').space(), number]);
-print(assignment.parse(SpanScanner('x = 1')).value); // [x, NULL, 1]
+print(assignment.parse(SpanScanner('x = 1')).value); // [x, null, 1]
 ```
 
 The `tuple2` to `tuple7` functions match a sequence of parsers with different types, and produce a `Tuple2` to `Tuple7` from the `tuple` package.
@@ -94,11 +94,11 @@ print(tuple.item1); // x
 print(tuple.item3); // 1
 ```
 
-`a.and(b)`, or `a & b`, matches both parsers but keeps only the value of `a`.
+`a.and(b)`, or `a & b`, matches both parsers but keeps only the value of `a`. `b` can be a parser of any type.
 
 ## Alternatives
 
-`any` tries parsers in order and uses the first one that matches. `longest` tries all of them and uses the one that matches the most text. `a | b` and `a.or(b)` are the same as `any([a, b])`.
+`any` tries parsers in order and uses the first one that matches. `longest` tries all of them and uses the one that matches the most text. `a | b` and `a.or(b)` are the same as `any([a, b])`. If `b` has a different type from `a`, its values are cast to `a`'s type, and one that does not fit throws a `TypeError`.
 
 ```dart
 Parser<String> keyword(String text) => match<String>(text).value((r) => text);
@@ -113,8 +113,8 @@ print(best.parse(SpanScanner('int')).value); // int
 
 | Method | Matches |
 | --- | --- |
-| `opt()` | Zero or one time. The value is `null` when nothing matches |
-| `star()` | Zero or more times. The value is `null`, not an empty list, when nothing matches |
+| `opt()` | Zero or one time. The value is `null` when nothing matches. With `backtrack: false`, a failed attempt keeps the text it consumed |
+| `star()` | Zero or more times. The value is an empty list when nothing matches |
 | `plus()` | One or more times |
 | `times(n)` | Exactly `n` times, or at least `n` times with `exact: false` |
 | `separatedBy(separator)` | One or more times, separated by `separator`, whose values are dropped |
@@ -156,6 +156,16 @@ print(letters.parse(SpanScanner('abc1')).value); // abc
 ```dart
 print(number.parenthesized().parse(SpanScanner('(4)')).value); // 4
 print(number.surroundedBy(match('"')).parse(SpanScanner('"4"')).value); // 4
+```
+
+`separatedByComma()` is `separatedBy` with a comma and optional spaces. `surroundedByCurlyBraces` and `surroundedBySquareBrackets` match a parser, or nothing, between braces or brackets, and give `defaultValue` when they are empty.
+
+```dart
+var array = number.separatedByComma().surroundedBySquareBrackets(
+  defaultValue: [],
+);
+print(array.parse(SpanScanner('[1, 2]')).value); // [1, 2]
+print(array.parse(SpanScanner('[]')).value); // []
 ```
 
 ## Errors
@@ -225,13 +235,31 @@ value.parser = any<Object>([number, list]);
 print(value.parse(SpanScanner('[1, [2, 3], 4]')).value); // [1, [2, 3], 4]
 ```
 
-A parser that is entered again at the same position, without consuming any text, fails instead of recursing forever. This means a left-recursive rule such as `sum := sum '+' number | number` does not loop, but it does not parse all of its input either: it parses `1+2+3` as `1+2`. Write such rules with repetition, such as `number.separatedBy(match('+'))`, or make them right-recursive.
+Left-recursive rules, such as `difference := difference '-' number | number`, parse all of their input and group from the left, so `10-2-3` is `(10-2)-3`. Two levels of left recursion give operator precedence:
+
+```dart
+var expr = reference<int>(), term = reference<int>();
+var factor = any<int>([number, expr.parenthesized()]);
+
+term.parser = any<int>([
+  chain<dynamic>([term, match('*'), factor])
+      .map((r) => (r.value![0] as int) * (r.value![2] as int)),
+  factor,
+]);
+expr.parser = any<int>([
+  chain<dynamic>([expr, match('+'), term])
+      .map((r) => (r.value![0] as int) + (r.value![2] as int)),
+  term,
+]);
+
+print(expr.parse(SpanScanner('2+3*4')).value); // 14
+```
 
 ## Other combinators
 
 | Method | Effect |
 | --- | --- |
-| `cache()` | Caches the parser's result at each position, for as long as the parser exists. See [Limitations](#limitations) |
+| `cache()` | Caches the parser's result at each position during one parse |
 | `maxDepth(depth)` | Fails when the parser is nested more than `depth` levels deep |
 | `safe()` | Turns an exception thrown during parsing into an error. After one exception, the parser always fails |
 | `forward(n)`, `back(n)` | Moves the scanner `n` characters forward or back after a successful match |
@@ -261,29 +289,8 @@ any(2) (
 )
 ```
 
-A `reference` is printed in full the first time it appears in a buffer, and as `(previously printed reference)` after that.
-
-## Limitations
-
-`chain` adds the string `'NULL'` for each element without a value, so a `chain` with a type argument such as `chain<int>` throws a `TypeError` when one of its elements has no value. `then` and the `tupleN` functions also give `'NULL'` for such an element.
-
-`separatedByComma()` throws a `TypeError` when it matches a comma, and `surroundedByCurlyBraces` and `surroundedBySquareBrackets` throw one for empty braces or brackets. Use `separatedBy(match(',').space())` and `surroundedBy` instead, and match empty brackets as a separate alternative:
-
-```dart
-var array = any<List<int>>([
-  number
-      .space()
-      .separatedBy(match(',').space())
-      .surroundedBy(match('[').space(), match(']').space()),
-  chain([match('[').space(), match(']').space()]).map((r) => <int>[]),
-]);
-print(array.parse(SpanScanner('[]')).value); // []
-```
-
-`&` and `|` require the other parser to have the same type as this one, and Dart also checks this at run time. A parser stored in a variable of type `Parser` keeps the type it was created with, such as `ListParser<int>`, so combining it with `&` or `|` can throw a `TypeError`. `and` accepts a parser of any type.
-
-`cache()` stores results by position only, and keeps them for as long as the parser exists. Parsing different text with the same cached parser returns the results from the earlier text, so create cached parsers for each input.
+A `reference` is numbered and printed in full the first time it appears in a call to `stringify`, as `reference #1 (...)`, and as `reference #1 (printed above)` after that. So a grammar that refers to itself is printed without recursing forever.
 
 ## Upgrading from 5.x
 
-Version 6.0.0 removes `Reference.printed`, because each `CodeBuffer` now tracks the references printed into it, and `stringify` takes a `CodeBuffer` from `belatuk_code_buffer` 6.0.0. See the [changelog](CHANGELOG.md) for the full list.
+Version 6.0.0 changes several results. `chain`, `then` and the `tupleN` functions give `null` for an element without a value, instead of the string `'NULL'`, and `chain` with a non-nullable type throws a `StateError` in that case. `star()` gives an empty list instead of `null`. Left-recursive rules now parse all of their input, which changes the result of grammars that relied on them stopping after one step. References are printed with numbers, and `Reference.printed` is removed. See the [changelog](CHANGELOG.md) for the full list.

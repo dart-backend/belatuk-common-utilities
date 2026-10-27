@@ -1,8 +1,35 @@
 part of 'combinator.dart';
 
-/// The span of the text a failed attempt consumed from [start], or `null` if it consumed none.
-FileSpan? _consumedSpan(SpanScanner scanner, LineScannerState start) =>
-    scanner.position == start.position ? null : scanner.spanFrom(start);
+/// Parses [parser] on behalf of the optional parser [self], so that a failed attempt
+/// still succeeds, with [fallback] as its value.
+///
+/// If [backtrack] is `true`, a failed attempt restores the scanner. Otherwise it keeps
+/// the text the attempt consumed, and covers it with its span.
+ParseResult<U> _parseOptional<U>(
+  Parser<U> self,
+  Parser<U> parser,
+  bool backtrack,
+  ParseArgs args, {
+  U? fallback,
+}) {
+  var scanner = args.scanner;
+  var start = scanner.state;
+  var result = parser._parse(args.increaseDepth());
+
+  if (result.successful) return result.change(parser: self);
+
+  if (backtrack) scanner.state = start;
+  var consumed = !backtrack && scanner.position != start.position;
+  return ParseResult<U>(
+    args.trampoline,
+    scanner,
+    self,
+    true,
+    result.errors,
+    span: consumed ? scanner.spanFrom(start) : null,
+    value: fallback,
+  );
+}
 
 class _Opt<T> extends Parser<T> {
   final Parser<T> parser;
@@ -11,24 +38,8 @@ class _Opt<T> extends Parser<T> {
   _Opt(this.parser, this.backtrack);
 
   @override
-  ParseResult<T> __parse(ParseArgs args) {
-    var start = args.scanner.state;
-    var result = parser._parse(args.increaseDepth());
-
-    if (!result.successful) {
-      if (backtrack) args.scanner.state = start;
-      return ParseResult<T>(
-        args.trampoline,
-        args.scanner,
-        this,
-        true,
-        result.errors,
-        span: backtrack ? null : _consumedSpan(args.scanner, start),
-      );
-    }
-
-    return result.change(parser: this);
-  }
+  ParseResult<T> __parse(ParseArgs args) =>
+      _parseOptional(this, parser, backtrack, args);
 
   @override
   void _stringify(CodeBuffer buffer, _StringifyContext context) {
@@ -52,25 +63,13 @@ class _ListOpt<T> extends ListParser<T> {
   _ListOpt(this.parser, this.backtrack, {this.emptyOnFailure = false});
 
   @override
-  ParseResult<List<T>> __parse(ParseArgs args) {
-    var start = args.scanner.state;
-    var result = parser._parse(args.increaseDepth());
-
-    if (!result.successful) {
-      if (backtrack) args.scanner.state = start;
-      return ParseResult<List<T>>(
-        args.trampoline,
-        args.scanner,
-        this,
-        true,
-        result.errors,
-        span: backtrack ? null : _consumedSpan(args.scanner, start),
-        value: emptyOnFailure ? <T>[] : null,
-      );
-    }
-
-    return result.change(parser: this);
-  }
+  ParseResult<List<T>> __parse(ParseArgs args) => _parseOptional(
+    this,
+    parser,
+    backtrack,
+    args,
+    fallback: emptyOnFailure ? <T>[] : null,
+  );
 
   @override
   void _stringify(CodeBuffer buffer, _StringifyContext context) {

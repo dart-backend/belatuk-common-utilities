@@ -109,8 +109,6 @@ abstract class Parser<T> {
       }
 
       trampoline._growing.remove((this, pos));
-      // A nested rule may have marked this parser again during growth. It has finished.
-      trampoline._leftRecursive.remove((this, pos));
 
       // Results memoized at this position during growth may depend on an older seed.
       trampoline._forgetAt(pos);
@@ -429,11 +427,13 @@ class Trampoline {
   }
 
   /// Memoizes [result], unless a result is already memoized for [parser] at [position].
+  ///
+  /// When the result is used again, the scanner moves to the end of its span, if it has one.
   void memoize(Parser parser, int position, ParseResult? result) {
     if (result != null) {
       _memo
           .putIfAbsent(position, () => {})
-          .putIfAbsent(parser, () => (result, null));
+          .putIfAbsent(parser, () => (result, result.span?.end.offset));
     }
   }
 

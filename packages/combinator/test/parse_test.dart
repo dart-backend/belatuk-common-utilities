@@ -213,15 +213,37 @@ void main() {
     });
   });
 
-  test('chain with failFast: false fails instead of throwing', () {
+  group('chain with failFast: false', () {
     var word = match<String>('a').value((_) => 'a');
     var other = match<String>('b').value((_) => 'b');
-    var result = chain<String>([
-      word,
-      other,
-    ], failFast: false).parse(scan('ax'));
-    expect(result.successful, isFalse);
-    expect(result.value, isNull);
+
+    test('fails instead of throwing, even with a later empty element', () {
+      var empty = match<String>('c').opt();
+      var result = chain<String>([
+        word,
+        other,
+        empty,
+      ], failFast: false).parse(scan('ax'));
+      expect(result.successful, isFalse);
+      expect(result.value, isNull);
+    });
+
+    test('keeps the partial values with a nullable type', () {
+      var result = chain<String?>([
+        word,
+        other,
+      ], failFast: false).parse(scan('ax'));
+      expect(result.successful, isFalse);
+      expect(result.value, ['a', null]);
+    });
+  });
+
+  test('a result added with memoize can be read back', () {
+    var trampoline = Trampoline();
+    var result = number.parse(scan('12'));
+    trampoline.memoize(number, 0, result);
+    expect(trampoline.hasMemoized(number, 0), isTrue);
+    expect(trampoline.getMemoized<int>(number, 0), same(result));
   });
 
   test('opt(backtrack: false) keeps the consumed text in its span', () {
@@ -245,19 +267,6 @@ void main() {
       expect(a.parse(scan(input)).span?.text, input, reason: input);
     }
     expect(a.parse(scan('axyx')).value, '([(ax)y]x)');
-  });
-
-  test('chain with failFast: false does not throw after an element failed', () {
-    var word = match<String>('a').value((_) => 'a');
-    var other = match<String>('b').value((_) => 'b');
-    var empty = match<String>('c').opt();
-    var result = chain<String>([
-      word,
-      other,
-      empty,
-    ], failFast: false).parse(scan('ax'));
-    expect(result.successful, isFalse);
-    expect(result.value, isNull);
   });
 
   test('the StateError names the element without a value', () {

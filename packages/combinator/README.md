@@ -291,6 +291,10 @@ any(2) (
 
 A `reference` is numbered and printed in full the first time it appears in a call to `stringify`, as `reference #1 (...)`, and as `reference #1 (printed above)` after that. So a grammar that refers to itself is printed without recursing forever.
 
+## Limitations
+
+Results are cached by parser and position for the length of one parse, regardless of how deeply nested the parser was. So a `maxDepth` parser that fails because it was reached too deep in the grammar also fails if it is reached again at the same position from a shallower depth.
+
 ## Upgrading from 5.x
 
 Version 6.0.0 changes several results. `chain`, `then` and the `tupleN` functions give `null` for an element without a value, instead of the string `'NULL'`, and `chain` with a non-nullable type throws a `StateError` in that case. `star()` gives an empty list instead of `null`. Left-recursive rules now parse all of their input, which changes the result of grammars that relied on them stopping after one step. References are printed with numbers, and `Reference.printed` is removed. See the [changelog](CHANGELOG.md) for the full list.

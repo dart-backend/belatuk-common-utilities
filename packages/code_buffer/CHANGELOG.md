@@ -1,5 +1,22 @@
 # Change Log
 
+## 6.0.0
+
+### Breaking changes in 6.0.0
+
+* **Breaking:** `length` matches the length of `toString()`. It now counts indentation, the full `newline` sequence and the trailing newline, and no longer counts a line break after the last line. Span offsets follow the same rule, so each one is the position of its text in `toString()`. With `trailingNewline`, an empty buffer has a `length` of `newline.length`, although `isEmpty` is `true`.
+* **Breaking:** `writeln()` with nothing on the current line adds a blank line, without indentation, instead of being dropped from the output. On an empty buffer it adds one, so `isEmpty` becomes `false` even though `toString()` is still empty.
+
+### Fixes in 6.0.0
+
+* **Copying:** Lines copied with `copyInto` get consecutive line numbers and correct offsets, including when the target buffer is empty or its last line has already been ended.
+* **Copying:** The `lastSpan` of a copied line keeps its position within the line, even when the same text appears earlier in the line.
+* **Copying:** A buffer can be copied into itself.
+* **Copying:** `sourceMappings` are copied with each line, unchanged, instead of being dropped.
+* **Copying:** Blank lines are copied without indentation.
+* **Writing:** `writeCharCode` counts a character outside the Basic Multilingual Plane, such as an emoji, as two code units.
+* **Writing:** `clear()` resets `lastLine`.
+
 ## 5.5.0
 
 * Require Dart >= 3.13

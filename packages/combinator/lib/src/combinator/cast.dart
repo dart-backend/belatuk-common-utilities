@@ -20,11 +20,11 @@ class _Cast<T, U extends T> extends Parser<U> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('cast<$U> (')
       ..indent();
-    parser.stringify(buffer);
+    parser._stringify(buffer, context);
     buffer
       ..outdent()
       ..writeln(')');
@@ -51,11 +51,11 @@ class _CastDynamic<T> extends Parser<dynamic> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer
       ..writeln('cast<dynamic> (')
       ..indent();
-    parser.stringify(buffer);
+    parser._stringify(buffer, context);
     buffer
       ..outdent()
       ..writeln(')');

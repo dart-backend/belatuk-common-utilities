@@ -26,7 +26,13 @@ Map<String, dynamic> _apply(
   return map.cast<String, dynamic>();
 }
 
+/// Creates a text node. Its text is HTML-escaped when rendered.
 Node text(String text) => TextNode(text);
+
+/// Creates a node whose [html] is rendered as-is, without escaping.
+///
+/// Never pass untrusted input: it can inject any HTML, including scripts.
+Node raw(String html) => RawNode(html);
 
 Node a({
   String? href,
@@ -61,7 +67,7 @@ Node abbr({
   Map<String, dynamic> p = const {},
   Iterable<Node> c = const [],
 }) => h(
-  'addr',
+  'abbr',
   _apply([p], {'title': title, 'id': id, 'class': className, 'style': style}),
   [...c],
 );
@@ -118,11 +124,16 @@ Node area({
 );
 
 Node article({
-  String? className,
-  String? style,
+  String? id,
+  className,
+  style,
   Map<String, dynamic> p = const {},
   Iterable<Node> c = const [],
-}) => h('article', _apply([p], {'class': className, 'style': style}), [...c]);
+}) => h(
+  'article',
+  _apply([p], {'id': id, 'class': className, 'style': style}),
+  [...c],
+);
 
 Node aside({
   String? id,
@@ -345,11 +356,9 @@ Node col({
   className,
   style,
   Map<String, dynamic> p = const {},
-  Iterable<Node> c = const [],
-}) => h(
+}) => SelfClosingNode(
   'col',
   _apply([p], {'span': span, 'id': id, 'class': className, 'style': style}),
-  [...c],
 );
 
 Node colgroup({
@@ -362,6 +371,19 @@ Node colgroup({
 }) => h(
   'colgroup',
   _apply([p], {'span': span, 'id': id, 'class': className, 'style': style}),
+  [...c],
+);
+
+Node data({
+  String? value,
+  String? id,
+  className,
+  style,
+  Map<String, dynamic> p = const {},
+  Iterable<Node> c = const [],
+}) => h(
+  'data',
+  _apply([p], {'value': value, 'id': id, 'class': className, 'style': style}),
   [...c],
 );
 
@@ -691,6 +713,16 @@ Node header({
 
 Node hr() => SelfClosingNode('hr');
 
+Node hgroup({
+  String? id,
+  className,
+  style,
+  Map<String, dynamic> p = const {},
+  Iterable<Node> c = const [],
+}) => h('hgroup', _apply([p], {'id': id, 'class': className, 'style': style}), [
+  ...c,
+]);
+
 Node html({
   String? manifest,
   String? xmlns,
@@ -736,7 +768,8 @@ Node iframe({
   className,
   style,
   Map<String, dynamic> p = const {},
-}) => SelfClosingNode(
+  Iterable<Node> c = const [],
+}) => h(
   'iframe',
   _apply(
     [p],
@@ -752,6 +785,7 @@ Node iframe({
       'style': style,
     },
   ),
+  [...c],
 );
 
 Node img({
@@ -914,8 +948,7 @@ Node keygen({
   className,
   style,
   Map<String, dynamic> p = const {},
-  Iterable<Node> c = const [],
-}) => h(
+}) => SelfClosingNode(
   'keygen',
   _apply(
     [p],
@@ -931,7 +964,6 @@ Node keygen({
       'style': style,
     },
   ),
-  [...c],
 );
 
 Node label({
@@ -1121,6 +1153,37 @@ Node meta({
       'style': style,
     },
   ),
+);
+
+Node meter({
+  num? value,
+  num? min,
+  num? max,
+  num? low,
+  num? high,
+  num? optimum,
+  String? id,
+  className,
+  style,
+  Map<String, dynamic> p = const {},
+  Iterable<Node> c = const [],
+}) => h(
+  'meter',
+  _apply(
+    [p],
+    {
+      'value': value,
+      'min': min,
+      'max': max,
+      'low': low,
+      'high': high,
+      'optimum': optimum,
+      'id': id,
+      'class': className,
+      'style': style,
+    },
+  ),
+  [...c],
 );
 
 Node nav({
@@ -1438,6 +1501,16 @@ Node script({
   [...c],
 );
 
+Node search({
+  String? id,
+  className,
+  style,
+  Map<String, dynamic> p = const {},
+  Iterable<Node> c = const [],
+}) => h('search', _apply([p], {'id': id, 'class': className, 'style': style}), [
+  ...c,
+]);
+
 Node section({
   String? id,
   className,
@@ -1478,6 +1551,19 @@ Node select({
       'style': style,
     },
   ),
+  [...c],
+);
+
+Node slot({
+  String? name,
+  String? id,
+  className,
+  style,
+  Map<String, dynamic> p = const {},
+  Iterable<Node> c = const [],
+}) => h(
+  'slot',
+  _apply([p], {'name': name, 'id': id, 'class': className, 'style': style}),
   [...c],
 );
 
@@ -1631,6 +1717,18 @@ Node td({
       'style': style,
     },
   ),
+  [...c],
+);
+
+Node template({
+  String? id,
+  className,
+  style,
+  Map<String, dynamic> p = const {},
+  Iterable<Node> c = const [],
+}) => h(
+  'template',
+  _apply([p], {'id': id, 'class': className, 'style': style}),
   [...c],
 );
 
@@ -1857,12 +1955,8 @@ Node video({
   [...c],
 );
 
-Node wbr({
-  String? id,
-  className,
-  style,
-  Map<String, dynamic> p = const {},
-  Iterable<Node> c = const [],
-}) => h('wbr', _apply([p], {'id': id, 'class': className, 'style': style}), [
-  ...c,
-]);
+Node wbr({String? id, className, style, Map<String, dynamic> p = const {}}) =>
+    SelfClosingNode(
+      'wbr',
+      _apply([p], {'id': id, 'class': className, 'style': style}),
+    );

@@ -18,5 +18,5 @@ void main() {
     ],
   );
 
-  print(dom);
+  print(StringRenderer().render(dom));
 }

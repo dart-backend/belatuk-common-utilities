@@ -54,7 +54,7 @@ abstract class RangeHeader {
     if (header == null) {
       throw InvalidRangeHeaderException('Header is null');
     }
-    var items = foldItems(header.items);
+    var items = fold ? foldItems(header.items) : header.items;
     return RangeHeaderImpl(header.rangeUnit, items);
   }
 

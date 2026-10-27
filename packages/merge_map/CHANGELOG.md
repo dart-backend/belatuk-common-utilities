@@ -1,5 +1,17 @@
 # Change Log
 
+## 6.0.0
+
+### Breaking changes in 6.0.0
+
+* **Breaking:** Nested maps are merged even when their key or value types differ from the outer map's, as long as the merged map fits the value type. Before, such maps overwrote each other. When the types differ, the merged map is a `Map<dynamic, dynamic>`.
+* **Breaking:** Nested maps more than one level deep keep the outer key and value types when they fit them, such as `Map<String, dynamic>`, instead of becoming `Map<dynamic, dynamic>`.
+
+### Fixes in 6.0.0
+
+* **Merging:** Merging nested maps no longer relies on an unchecked cast, which could throw a `TypeError`.
+* **Docs:** The README example passes the maps as a list, as `mergeMap` expects.
+
 ## 5.5.0
 
 * Require Dart >= 3.13

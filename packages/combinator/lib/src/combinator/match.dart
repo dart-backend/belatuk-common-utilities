@@ -37,7 +37,7 @@ class _Match<T> extends Parser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     buffer.writeln('match($pattern)');
   }
 }

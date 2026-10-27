@@ -121,6 +121,8 @@ class Parser {
 
       if (items.isEmpty) {
         throw _expected('range');
+      } else if (!done) {
+        throw _expected('","');
       } else {
         return RangeHeaderImpl(unit, items);
       }
@@ -135,7 +137,13 @@ class Parser {
       var start = int.parse(current!.span!.text);
       if (next(TokenType.dash)) {
         if (next(TokenType.int)) {
-          return RangeHeaderItem(start, int.parse(current!.span!.text));
+          var end = int.parse(current!.span!.text);
+          if (end < start) {
+            throw RangeHeaderParseException(
+              'The range $start-$end ends before it starts.',
+            );
+          }
+          return RangeHeaderItem(start, end);
         } else {
           return RangeHeaderItem(start);
         }

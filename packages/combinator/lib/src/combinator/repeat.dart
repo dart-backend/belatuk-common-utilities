@@ -80,14 +80,14 @@ class _Repeat<T> extends ListParser<T> {
   }
 
   @override
-  void stringify(CodeBuffer buffer) {
+  void _stringify(CodeBuffer buffer, _StringifyContext context) {
     var r = StringBuffer('{$count');
     if (!exact) r.write(',');
     r.write('}');
     buffer
       ..writeln('repeat($r) (')
       ..indent();
-    parser.stringify(buffer);
+    parser._stringify(buffer, context);
     buffer
       ..outdent()
       ..writeln(')');

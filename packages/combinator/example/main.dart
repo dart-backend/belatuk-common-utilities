@@ -28,7 +28,8 @@ final Parser number = //
 void main() {
   while (true) {
     stdout.write('Enter a number: ');
-    var line = stdin.readLineSync()!;
+    var line = stdin.readLineSync();
+    if (line == null) break;
     var scanner = SpanScanner(line, sourceUrl: 'stdin');
     var result = number.parse(scanner);
 

@@ -4,207 +4,223 @@
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/pub_sub/LICENSE)
 
-Keep application instances in sync with a simple pub/sub API.
+A publish/subscribe library for keeping application instances in sync, such as several isolates of one server, or several processes connected over a network. A central server passes events between clients, and checks every request against a list of known clients and their permissions.
 
 ## Installation
-
-Add `belatuk_pub_sub` as a dependency in your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
   belatuk_pub_sub: ^7.0.0
 ```
 
-Then, be sure to run `dart pub get` in your terminal.
+## Overview
 
-## Usage
+A `Server` passes events between clients. It receives their requests through one or more *adapters*, each of which serves clients over one medium. A single server can serve clients in other isolates and clients over the network at the same time.
 
-`belatuk_pub_sub` is your typical pub/sub API. However, `belatuk_pub_sub` enforces authentication of every
-request. It is very possible that `belatuk_pub_sub` will run on both server and in the browser,
-or on a platform like Flutter.
-
-**Be careful to not leak any `belatuk_pub_sub` client ID's if operating over a network.**
-If you do, you run the risk of malicious users injecting events into your application.
-
-A `belatuk_pub_sub` server can operate across multiple *adapters*, which take care of interfacing data over different media. For example, a single server can handle pub/sub between multiple Isolates and TCP Sockets, as well as WebSockets, simultaneously.
+| Library | Contents |
+| --- | --- |
+| `package:belatuk_pub_sub/belatuk_pub_sub.dart` | `Server`, `ClientInfo`, the `Client` and `Adapter` interfaces, and `PubSubException` |
+| `package:belatuk_pub_sub/isolate.dart` | `IsolateAdapter` and `IsolateClient`, which communicate through `SendPort`s |
+| `package:belatuk_pub_sub/json_rpc_2.dart` | `JsonRpc2Adapter` and `JsonRpc2Client`, which communicate with JSON-RPC 2.0 over any `StreamChannel<String>`, such as a WebSocket |
 
 ```dart
-import 'package:belatuk_pub_sub/belatuk_pub_sub.dart' as pub_sub;
-
-main() async {
-  var server =  pub_sub.Server([
-     FooAdapter(...),
-     BarAdapter(...)
-  ]);
-
-  server.addAdapter( BazAdapter(...));
-
-  // Call `start` to activate adapters, and begin handling requests.
-  server.start();
-}
-```
-
-### Trusted Clients
-
-You can use `package:belatuk_pub_sub` without explicitly registering clients, *if and only if* those clients come from trusted sources. Clients via `Isolate` are always trusted. Clients via `package:json_rpc_2` must be explicitly marked as trusted (i.e. using an IP whitelist mechanism):
-
-```dart
-JsonRpc2Adapter(..., isTrusted: false);
-
-// Pass `null` as Client ID when trusted...
-pub_sub.IsolateClient(null);
-```
-
-### Access Control
-
-The ID's of all *untrusted* clients who will connect to the server must be known at start-up time.
-You may not register new clients after the server has started. This is mostly a security consideration, to make it impossible to register new clients, thus preventing malicious users from granting themselves additional privileges within the system.
-
-```dart
-import 'package:belatuk_pub_sub/belatuk_pub_sub.dart' as pub_sub;
+import 'package:belatuk_pub_sub/belatuk_pub_sub.dart';
+import 'package:belatuk_pub_sub/isolate.dart';
 
 void main() async {
-  // ...
-  server.registerClient(const ClientInfo('<client-id>'));
+  var adapter = IsolateAdapter();
+  var server = Server([adapter])..start();
 
-  // Create a user who can subscribe, but not publish.
-  server.registerClient(const ClientInfo('<client-id>', canPublish: false));
+  var alice = IsolateClient(null, adapter.receivePort.sendPort);
+  var bob = IsolateClient(null, adapter.receivePort.sendPort);
 
-  // Create a user who can publish, but not subscribe.
-  server.registerClient(const ClientInfo('<client-id>', canSubscribe: false));
+  var subscription = await bob.subscribe('greeting');
+  await alice.publish('greeting', 'Hello, Bob!');
+  print(await subscription.first); // Hello, Bob!
 
-  // Create a user with no privileges whatsoever.
-  server.registerClient(const ClientInfo('<client-id>', canPublish: false, canSubscribe: false));
-
-  server.start();
+  await alice.close();
+  await bob.close();
+  await server.close();
 }
 ```
 
-### Isolates
+`addAdapter` adds another adapter, and `start` starts them all and begins handling requests. Both adapters and clients must be added before the server starts. `close` closes the server and all its adapters.
 
-If you are just running multiple instances of a server, use `package:belatuk_pub_sub/isolate.dart`. You'll need one isolate to be the master. Typically this is the first isolate you create.
+## Publishing and subscribing
+
+Every client implements the same `Client` interface:
+
+| Method | Effect |
+| --- | --- |
+| `publish(eventName, value)` | Sends `value` to every current subscriber to `eventName`, except subscribers with the publisher's own client ID. Completes once the server has accepted the event |
+| `subscribe(eventName)` | Completes with a `ClientSubscription`, which is a `Stream` of the values published to `eventName` |
+| `close()` | Closes the client and all its subscriptions |
+
+Call `unsubscribe` on a `ClientSubscription` to tell the server to stop sending events to it. Its stream then closes.
 
 ```dart
-import 'dart:io';
+var subscription = await client.subscribe('user::logged_in');
+subscription.listen((user) => print('Logged in: $user'));
+
+// Later:
+await subscription.unsubscribe();
+```
+
+Events are only sent to subscriptions that exist when they are published. They are not stored, so a client that subscribes later does not receive earlier events.
+
+When the server rejects a request, the `Future` completes with a `PubSubException`, whose `message` gives the reason.
+
+## Clients and permissions
+
+Each request names the client it is made on behalf of, by its client ID. The server only accepts IDs that were registered with `registerClient` before it started. A `ClientInfo` can also deny a client permission to publish or to subscribe.
+
+```dart
+var server = Server([adapter])
+  ..registerClient(const ClientInfo('web-1'))
+  // This client can subscribe, but not publish.
+  ..registerClient(const ClientInfo('dashboard', canPublish: false))
+  // This client can publish, but not subscribe.
+  ..registerClient(const ClientInfo('audit-log', canSubscribe: false))
+  ..start();
+
+var dashboard = IsolateClient('dashboard', adapter.receivePort.sendPort);
+
+try {
+  await dashboard.publish('user::logged_in', 'Mary');
+} on PubSubException catch (e) {
+  print(e.message); // You are not allowed to publish events.
+}
+```
+
+Client IDs are the only form of authentication, so keep them secret. Anyone who knows a client ID can publish and subscribe as that client.
+
+### Trusted clients
+
+A client can pass `null` as its client ID if its adapter trusts it. The server then gives it an ad-hoc ID, with permission to publish and subscribe, and the client's `clientId` getter returns that ID after its first request. All requests sent over the same connection share one ad-hoc ID, which stops working when the connection closes.
+
+| Adapter | Trusted |
+| --- | --- |
+| `IsolateAdapter` | Always, since its clients run in the same process |
+| `JsonRpc2Adapter` | Only if created with `isTrusted: true` |
+
+A client that sends an ID must use a registered one, even on a trusted adapter.
+
+## Isolates
+
+`IsolateAdapter` receives requests on its `receivePort`. Send `adapter.receivePort.sendPort` to each isolate, and create an `IsolateClient` there. The client connects to the server on its own, and requests made before the connection completes wait for it.
+
+```dart
 import 'dart:isolate';
-import 'package:belatuk_pub_sub/isolate.dart' as pub_sub;
-import 'package:belatuk_pub_sub/belatuk_pub_sub.dart' as pub_sub;
+
+import 'package:belatuk_pub_sub/belatuk_pub_sub.dart';
+import 'package:belatuk_pub_sub/isolate.dart';
 
 void main() async {
-  // Easily bring up a server.
-  var adapter = pub_sub.IsolateAdapter();
-  var server = pub_sub.Server([adapter]);
+  var adapter = IsolateAdapter();
+  var server = Server([adapter])..start();
 
-  // You then need to create a client that will connect to the adapter.
-  // Each isolate in your application should contain a client.
-  for (int i = 0; i < Platform.numberOfProcessors - 1; i++) {
-    server.registerClient(pub_sub.ClientInfo('client$i'));
+  var client = IsolateClient(null, adapter.receivePort.sendPort);
+  var subscription = await client.subscribe('job::done');
+
+  for (var i = 1; i <= 3; i++) {
+    await Isolate.spawn(worker, (i, adapter.receivePort.sendPort));
   }
 
-  // Start the server.
-  server.start();
-
-  // Next, let's start isolates that interact with the server.
-  //
-  // Fortunately, we can send SendPorts over Isolates, so this is no hassle.
-  for (int i = 0; i < Platform.numberOfProcessors - 1; i++)
-    Isolate.spawn(isolateMain, [i, adapter.receivePort.sendPort]);
-
-  // It's possible that you're running your application in the server isolate as well:
-  isolateMain([0, adapter.receivePort.sendPort]);
-}
-
-void isolateMain(List args) {
-  var client =
-      pub_sub.IsolateClient('client${args[0]}', args[1] as SendPort);
-
-  // The client will connect automatically. In the meantime, we can start subscribing to events.
-  client.subscribe('user::logged_in').then((sub) {
-    // The `ClientSubscription` class extends `Stream`. Hooray for asynchrony!
-    sub.listen((msg) {
-      print('Logged in: $msg');
-    });
-  });
-}
-
-```
-
-### JSON RPC 2.0
-
-If you are not running on isolates, you need to import
-`package:belatuk_pub_sub/json_rpc_2.dart`. This library leverages `package:json_rpc_2` and
-`package:stream_channel` to create clients and servers that can hypothetically run on any
-medium, i.e. WebSockets, or TCP Sockets.
-
-Check out `test/json_rpc_2_test.dart` for an example of serving `belatuk_pub_sub` over TCP sockets.
-
-## Protocol
-
-`belatuk_pub_sub` is built upon a simple RPC, and this package includes an implementation that runs via `SendPort`s and `ReceivePort`s, as well as one that runs on any `StreamChannel<String>`.
-
-Data sent over the wire looks like the following:
-
-```typescript
-// Sent by a client to initiate an exchange.
-interface Request {
-  // This is an arbitrary string, assigned by your client, but in every case,
-  // the client uses this to match your requests with asynchronous responses.
-  request_id: string,
-  
-  // The ID of the client to authenticate as.
-  // 
-  // As you can imagine, this should be kept secret, to prevent breaches.
-  client_id: string,
-
-  // Required for *every* request.
-  params: {
-    // A value to be `publish`ed.
-    value?: any,
-
-    // The name of an event to `publish`.
-    event_name?: string,
-
-    // The ID of a subscription to be cancelled.
-    subscription_id?: string
+  await for (var message in subscription.take(3)) {
+    print(message); // Worker 1 finished, and so on, in any order.
   }
+
+  await client.close();
+  await server.close();
 }
 
-/// Sent by the server in response to a request.
-interface Response {
-  // `true` for success, `false` for failures.
-  status: boolean,
-  
-  // Only appears if `status` is `false`; explains why an operation failed.
-  error_message?: string,
-
-  // Matches the request_id sent by the client.
-  request_id: string,
-
-  result?: {
-    // The number of other clients to whom an event was `publish`ed.
-    listeners:? number,
-
-    // The ID of a created subscription.
-    subscription_id?: string
-  }
+Future<void> worker((int, SendPort) args) async {
+  var (id, serverPort) = args;
+  var client = IsolateClient(null, serverPort);
+  await client.publish('job::done', 'Worker $id finished');
+  await client.close();
 }
 ```
 
-When sending via JSON_RPC 2.0, the `params` of a `Request` are simply folded into the object
-itself, for simplicity's sake. In this case, a response will be sent as a notification whose
-name is the `request_id`.
+Published values are sent between isolates, so they must be objects that a `SendPort` can send.
 
-In the case of Isolate clients/servers, events will be simply sent as Lists:
+## JSON-RPC 2.0
+
+`JsonRpc2Adapter` serves clients over any `StreamChannel<String>`, using [`package:json_rpc_2`](https://pub.dev/packages/json_rpc_2). It takes a `Stream` of channels, one for each client that connects. Published values must be encodable as JSON.
+
+This example serves clients over WebSockets with `dart:io`. It also needs [`package:stream_channel`](https://pub.dev/packages/stream_channel) in your dependencies.
 
 ```dart
-['<event-name>', value]
+import 'dart:async';
+import 'dart:io';
+
+import 'package:belatuk_pub_sub/belatuk_pub_sub.dart';
+import 'package:belatuk_pub_sub/json_rpc_2.dart';
+import 'package:stream_channel/stream_channel.dart';
+
+Future<Server> startServer() async {
+  var channels = StreamController<StreamChannel<String>>();
+  var httpServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 8080);
+
+  httpServer.listen((request) async {
+    if (WebSocketTransformer.isUpgradeRequest(request)) {
+      var socket = await WebSocketTransformer.upgrade(request);
+      channels.add(StreamChannel<dynamic>(socket, socket).cast<String>());
+    } else {
+      request.response.statusCode = HttpStatus.notFound;
+      await request.response.close();
+    }
+  });
+
+  return Server([JsonRpc2Adapter(channels.stream)])
+    ..registerClient(const ClientInfo('worker-secret'))
+    ..start();
+}
+
+Future<Client> connect() async {
+  var socket = await WebSocket.connect('ws://localhost:8080');
+  var channel = StreamChannel<dynamic>(socket, socket).cast<String>();
+  return JsonRpc2Client('worker-secret', channel);
+}
 ```
 
-Clients can send with the following 3 methods:
+Closing a `JsonRpc2Adapter`, or the server it belongs to, closes every client connection, and cancels its subscription to the stream of channels. That may close the stream's source, such as a `ServerSocket`.
 
-* `subscribe` (`event_name`:string): Subscribe to an event.
-* `unsubscribe` (`subscription_id`:string): Unsubscribe from an event you previously subscribed to.
-* `publish` (`event_name`:string, `value`:any): Publish an event to all other clients who are subscribed.
+### Wire protocol
 
-The client and server in `package:belatuk_pub_sub/isolate.dart` must make extra provisions to keep track of client ID's. Since `SendPort`s and `ReceivePort`s do not have any sort of guaranteed-unique ID's, new clients must send their `SendPort` to the server before sending any requests. The server then responds
-with an `id` that must be used to identify a `SendPort` to send a response to.
+Clients in other languages can connect by sending JSON-RPC 2.0 notifications. Each request is a notification named `publish`, `subscribe` or `unsubscribe`, with a `request_id` chosen by the client.
+
+| Method | Parameters |
+| --- | --- |
+| `publish` | `request_id`, `client_id`, `event_name`, `value` |
+| `subscribe` | `request_id`, `client_id`, `event_name` |
+| `unsubscribe` | `request_id`, `client_id`, `subscription_id` |
+
+`client_id` can be left out on a trusted adapter. The server responds with a notification whose method name is the `request_id`:
+
+```json
+{"jsonrpc": "2.0", "method": "subscribe", "params": {"request_id": "1", "client_id": "web-1", "event_name": "news"}}
+{"jsonrpc": "2.0", "method": "1", "params": {"status": true, "request_id": "1", "subscription_id": "...", "client_id": "web-1"}}
+```
+
+A successful `publish` response has a `result` with `listeners`, the number of subscriptions the event was sent to, and `client_id`. A failed request has `status` set to `false` and an `error_message`. Events arrive as notifications named `event`:
+
+```json
+{"jsonrpc": "2.0", "method": "event", "params": {"event_name": "news", "value": {"headline": "..."}}}
+```
+
+## Custom adapters
+
+To serve clients over another medium, extend `Adapter`. An adapter delivers requests on its `onPublish`, `onSubscribe` and `onUnsubscribe` streams, and decides which requests are trusted.
+
+An adapter that tracks connections should give each request the `connectionId` of the connection it arrived on, and report each closed connection on `onDisconnect`. The server then removes that connection's subscriptions and ad-hoc client ID. Without connection IDs, each trusted request that sends no client ID is given a new ad-hoc ID, and ad-hoc IDs are kept until the server closes.
+
+## Limitations
+
+Client IDs are sent with every request. Over a network, use an encrypted connection, such as `wss://`, so that they cannot be read and reused.
+
+Neither client reconnects on its own. After a connection is lost, create a new client and subscribe again.
+
+## Upgrading from 6.x
+
+Version 7.0.0 gives a trusted connection without a client ID a single ad-hoc ID, so such a client no longer receives the events it publishes itself, and the ID stops working when the connection closes. Classes that implement, rather than extend, `Adapter` or the request classes must add the new `onDisconnect` and `connectionId` members. See the [changelog](CHANGELOG.md) for the full list.

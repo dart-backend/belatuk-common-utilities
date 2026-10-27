@@ -14,7 +14,8 @@ final Parser<String> id = match<String>(RegExp(r'[A-Za-z]+'))
 void main() {
   while (true) {
     stdout.write('Enter a string (ex "a,b,c"): ');
-    var line = stdin.readLineSync()!;
+    var line = stdin.readLineSync();
+    if (line == null) break;
     var scanner = SpanScanner(line, sourceUrl: 'stdin');
     var result = id.separatedBy(match(',').space()).parse(scanner);
 

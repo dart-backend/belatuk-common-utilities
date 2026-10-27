@@ -4,166 +4,154 @@
 [![Null Safety](https://img.shields.io/badge/null-safety-brightgreen)](https://dart.dev/null-safety)
 [![License](https://img.shields.io/github/license/dart-backend/belatuk-common-utilities)](https://github.com/dart-backend/belatuk-common-utilities/blob/main/packages/symbol_table/LICENSE)
 
-A generic symbol table implementation in Dart, with support for scopes and constants.
-The symbol tables produced by this package are hierarchical (in this case, tree-shaped),
-and utilize basic memoization to speed up repeated lookups.
+A generic symbol table for interpreters and compilers written in Dart, with support for nested scopes, constants, visibility and closures. Symbol tables form a tree of scopes, and cache lookups to speed up repeated ones.
 
-## Variables
+## Installation
 
-To represent a symbol, use `Variable`. I opted for the name `Variable` to avoid conflict with the Dart primitive `Symbol`.
+```yaml
+dependencies:
+  belatuk_symbol_table: ^6.0.0
+```
+
+## Symbol tables and variables
+
+A `SymbolTable<T>` holds variables whose values are of type `T`. A symbol is represented by a `Variable`, a name chosen to avoid clashing with Dart's own `Symbol` class. Variables are created through a symbol table, never directly.
 
 ```dart
-var foo =  Variable<String>('foo');
-var bar =  Variable<String>('bar', value: 'baz');
+var scope = SymbolTable<double>(values: {'hydrogen': 1.0, 'avogadro': 6.022e23});
 
-// Call `lock` to mark a symbol as immutable.
-var shelley =  Variable<String>('foo', value: 'bar')..lock();
+// Create a variable in this scope. Creating a second variable with the same
+// name in the same scope throws a StateError.
+scope.create('one', value: 1.0);
+scope.create('pi', value: 3.14159, constant: true);
 
-foo.value = 'bar';
-shelley.value = 'Mary'; // Throws a StateError - constants cannot be overwritten.
+// Set the value of a variable in this scope or an ancestor, or create one in
+// this scope if none exists.
+scope.assign('two', 2.0);
+scope['three'] = 3.0; // The same as assign.
 
-foo.lock();
-foo.value = 'baz'; // Also throws a StateError - Once a variable is locked, it cannot be overwritten.
+// Find a variable in this scope or an ancestor. Returns null if there is none.
+var one = scope.resolve('one');
+var alsoOne = scope['one']; // The same as resolve.
+
+// Find a variable, or create one if there is none.
+var four = scope.resolveOrCreate('four', value: 4.0);
+
+// Remove a variable from this scope or an ancestor.
+scope.remove('two');
+```
+
+## Constants
+
+A constant's value cannot be changed. Create one with `constant: true`, or call `lock` on an existing variable.
+
+```dart
+var scope = SymbolTable<String>();
+var name = scope.create('name', value: 'Mary');
+name.lock();
+
+print(name.isImmutable); // true
+name.value = 'Shelley'; // Throws a StateError.
 ```
 
 ## Visibility
 
-Variables are *public* by default, but can also be marked as *private* or *protected*. This can be helpful if you are trying to determine which symbols should be exported from a library or class.
+Variables are *public* by default, but can also be marked as *protected* or *private*. The package gives these no meaning of its own: use them to decide which symbols to export from a library or class. Visibilities can be compared, with `private < protected < public`.
 
 ```dart
-myVariable.visibility = Visibility.protected;
-myVariable.visibility = Visibility.private;
+var scope = SymbolTable<int>();
+scope.create('helper').visibility = Visibility.private;
 ```
 
-## Symbol Tables
+## Exporting symbols
 
-It's easy to create a basic symbol table:
+`allVariables` lists every variable visible from a scope. When a scope and an ancestor both have a variable with the same name, only the nearer one is listed, as with variable shadowing.
 
 ```dart
-var mySymbolTable =  SymbolTable<int>();
-var doubles =  SymbolTable<double>(values: {
-  'hydrogen': 1.0,
-  'avogadro': 6.022e23
-});
+var global = SymbolTable<int>(values: {'x': 1, 'y': 2});
+var local = global.createChild(values: {'x': 10});
 
-// Create a new variable within the scope.
-doubles.create('one');
-doubles.create('one', value: 1.0);
-doubles.create('one', value: 1.0, constant: true);
-
-// Set a variable within an ancestor, OR create a new variable if none exists.
-doubles.assign('two', 2.0);
-
-// Completely remove a variable.
-doubles.remove('two');
-
-// Find a symbol, either in this symbol table or an ancestor.
-var symbol = doubles.resolve('one');
-
-// Find OR create a symbol.
-var symbol = doubles.resolveOrCreate('one');
-var symbol = doubles.resolveOrCreate('one', value: 1.0);
-var symbol = doubles.resolveOrCreate('one', value: 1.0, constant: true);
+print(local.allVariables.map((v) => '${v.name}=${v.value}')); // (x=10, y=2)
 ```
 
-## Exporting Symbols
-
-Due to the tree structure of symbol tables, it is extremely easy to
-extract a linear list of distinct variables, with variables lower in the hierarchy superseding their parents
-(effectively accomplishing variable shadowing).
+`allPublicVariables` lists only the public ones, and `allVariablesWithVisibility` lists those with a given visibility. A shadowed variable is never listed, even when the variable shadowing it has a different visibility.
 
 ```dart
-var allSymbols = mySymbolTable.allVariables;
+var global = SymbolTable<int>(values: {'x': 1, 'y': 2});
+var local = global.createChild();
+local.create('x').visibility = Visibility.private;
+
+print(local.allPublicVariables.map((v) => v.name)); // (y)
+print(local.allVariablesWithVisibility(Visibility.private).length); // 1
 ```
 
-We can also extract symbols which are *not* private. This helps us export symbols from libraries
-or classes.
+## Scopes
+
+There are three ways to create a new scope from an existing one.
+
+### Child scopes
+
+This is what most interpreters need. `createChild` creates a scope whose parent is the current one. The child can see its ancestors' variables, and its own variables shadow theirs.
 
 ```dart
-var exportedSymbols = mySymbolTable.allPublicVariables;
+var global = SymbolTable<int>(values: {'x': 1});
+var block = global.createChild(values: {'y': 2});
+
+print(block.resolve('x')?.value); // 1
+print(block.depth); // 1
 ```
 
-It's easy to extract symbols of a given visibility:
-
-```dart
-var exportedSymbols = mySymbolTable.allVariablesWithVisibility(Visibility.protected);
-```
-
-## Child Scopes
-
-There are three ways to create a new symbol table:
-
-### Regular Children
-
-This is what most interpreters need; it simply creates a symbol table with the current symbol table
-as its parent. The new scope can define its own symbols, which will only shadow the ancestors within the
-correct scope.
-
-```dart
-var child = mySymbolTable.createChild();
-var child = mySymbolTable.createChild(values: {...});
-```
-
-#### Depth
-
-Every symbol table has an associated `depth` attached to it, with the `depth` at the root
-being `0`. When `createChild` is called, the resulting child has an incremented `depth`.
+Every scope has a `depth`, which is `0` at the root and one more for each level of children. `parent`, `root` and `isRoot` describe a scope's place in the tree.
 
 ### Clones
 
-This creates a scope at the same level as the current one, with all the same variables.
+`clone` creates a scope at the same level as the current one, with the same parent and copies of its variables. Changing a variable in the clone does not change the original, and the other way around. The clone starts with no children of its own.
 
 ```dart
-var clone = mySymbolTable.clone();
+var scope = SymbolTable<int>(values: {'x': 1});
+var clone = scope.clone();
+clone.assign('x', 2);
+
+print(scope.resolve('x')?.value); // 1
 ```
 
-### Forked Scopes
+### Forked scopes
 
-If you are implementing a language with closure functions, you might consider looking into this.
-A forked scope is a scope identical to the current one, but instead of merely copying references
-to variables, the values of variables are copied into new ones.
+`fork` is useful for closures. Like a clone, a fork has copies of the current scope's variables, so their values are captured at the moment the fork is made. You can pass starter `values`, which replace copied variables with the same names.
 
-The new scope is essentially a "frozen" version of the current one.
-
-It is also effectively orphaned - though it is aware of its `parent`, the parent scope is unaware
-that the forked scope is a child. Thus, calls to `resolve` may return old variables, if a parent
-has called `remove` on a symbol.
+A fork has the same parent as the current scope, but the parent does not know about it. A fork looks up its ancestors' variables each time, so it sees variables that are added to or removed from them later.
 
 ```dart
-var forked = mySymbolTable.fork();
-var forked = mySymbolTable.fork(values: {...});
+var scope = SymbolTable<int>(values: {'counter': 0});
+var closure = scope.fork(values: {'step': 1});
+
+scope.assign('counter', 5);
+print(closure.resolve('counter')?.value); // 0
 ```
 
-## Creating Names
+## Unique names
 
-In languages with block scope, oftentimes, identifiers will collide within a global scope.
-To avoid this, symbol tables expose a `uniqueName()` method that simply attaches a numerical suffix to
-an input name. The name is guaranteed to never be repeated within a specific scope.
+In languages with block scope, identifiers from different blocks can collide once they are combined into one scope. `uniqueName` adds a numerical suffix to a name, and never returns the same name twice within a scope.
 
 ```dart
-var name0 = mySymbolTable.uniqueName('foo'); // foo0
-var name1 = mySymbolTable.uniqueName('foo'); // foo1
-var name2 = mySymbolTable.uniqueName('foo'); // foo2
+var scope = SymbolTable<int>();
+print(scope.uniqueName('foo')); // foo0
+print(scope.uniqueName('foo')); // foo1
 ```
 
-## `this` Context
+A name is not reused by the scope, its ancestors or its descendants, and is never the name of a variable visible from the scope. Sibling scopes, which cannot see each other's names, may generate the same name.
 
-Many languages handle a sort of `this` context that values within a scope may
-optionally be resolved against. Symbol tables can easily set their context
-as follows:
+## The `this` context
+
+Many languages resolve some values against a `this` context. A scope can set a `context`, and a scope without one uses its nearest ancestor's.
 
 ```dart
-void foo() {
-  mySymbolTable.context = thisContext;
-}
+var classScope = SymbolTable<Object>()..context = 'instance';
+var methodScope = classScope.createChild().createChild();
+
+print(methodScope.context); // instance
 ```
 
-Resolution of the `context` getter functions just like a symbol; if none is
-set locally, then it will refer to the parent.
+## Upgrading from 5.x
 
-```dart
-void bar() {
-  mySymbolTable.context = thisContext;
-  expect(mySymbolTable.createChild().createChild().context, thisContext);
-}
-```
+Version 6.0.0 corrects several behaviours. Most notably, `clone` now copies variables instead of sharing them, and `uniqueName` may return different names. See the [changelog](CHANGELOG.md) for the full list.

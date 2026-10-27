@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'node.dart';
 
 /// An object that can render a DOM tree into another representation, i.e. a `String`.
@@ -10,9 +12,13 @@ abstract class Renderer<T> {
 abstract class StringRenderer implements Renderer<String> {
   /// Initializes a new [StringRenderer].
   ///
-  /// If [html5] is not `false` (default: `true`), then self-closing elements will be rendered with a slash before the last angle bracket, ex. `<br />`.
+  /// If [html5] is `true` (default), then self-closing elements are rendered without a slash, ex. `<br>`.
+  /// If it is `false`, they are rendered with a slash before the last angle bracket, ex. `<br/>`.
   /// If [pretty] is `true` (default), then [whitespace] (default: `'  '`) will be inserted between nodes.
   /// You can also provide a [doctype] (default: `html`).
+  ///
+  /// Text and attribute values are HTML-escaped, except text inside `<script>` and `<style>`
+  /// elements, and [RawNode]s, which are written as-is.
   factory StringRenderer({
     bool html5 = true,
     bool pretty = true,
@@ -33,37 +39,20 @@ class _StringRendererImpl implements StringRenderer {
 
   _StringRendererImpl({this.html5, this.doctype});
 
-  void _renderInto(Node node, StringBuffer buf) {
+  void _renderInto(Node node, StringBuffer buf, [Node? parent]) {
     if (node is TextNode) {
-      buf.write(node.text);
+      _renderText(node, parent, buf);
     } else {
       buf.write('<${node.tagName}');
 
-      node.attributes.forEach((k, v) {
-        if (v == true) {
-          buf.write(' $k');
-        } else if (v == false || v == null) {
-          // Ignore
-        } else if (v is Iterable) {
-          var val = v.join(' ').replaceAll('"', '\\"');
-          buf.write(' $k="$val"');
-        } else if (v is Map) {
-          var val = v.keys
-              .fold<String>('', (out, k) => out += '$k: ${v[k]};')
-              .replaceAll('"', '\\"');
-          buf.write(' $k="$val"');
-        } else {
-          var val = v.toString().replaceAll('"', '\\"');
-          buf.write(' $k="$val"');
-        }
-      });
+      _renderAttributes(node, buf);
 
       if (node is SelfClosingNode) {
         buf.write((html5 != false) ? '>' : '/>');
       } else {
         buf.write('>');
         for (var child in node.children) {
-          _renderInto(child, buf);
+          _renderInto(child, buf, node);
         }
         buf.write('</${node.tagName}>');
       }
@@ -91,40 +80,23 @@ class _PrettyStringRendererImpl implements StringRenderer {
     }
   }
 
-  void _renderInto(int tabs, Node node, StringBuffer buf) {
+  void _renderInto(int tabs, Node node, StringBuffer buf, [Node? parent]) {
     if (tabs > 0) buf.writeln();
     _applyTabs(tabs, buf);
 
     if (node is TextNode) {
-      buf.write(node.text);
+      _renderText(node, parent, buf);
     } else {
       buf.write('<${node.tagName}');
 
-      node.attributes.forEach((k, v) {
-        if (v == true) {
-          buf.write(' $k');
-        } else if (v == false || v == null) {
-          // Ignore
-        } else if (v is Iterable) {
-          var val = v.join(' ').replaceAll('"', '\\"');
-          buf.write(' $k="$val"');
-        } else if (v is Map) {
-          var val = v.keys
-              .fold<String>('', (out, k) => out += '$k: ${v[k]};')
-              .replaceAll('"', '\\"');
-          buf.write(' $k="$val"');
-        } else {
-          var val = v.toString().replaceAll('"', '\\"');
-          buf.write(' $k="$val"');
-        }
-      });
+      _renderAttributes(node, buf);
 
       if (node is SelfClosingNode) {
         buf.write((html5 != false) ? '>' : '/>');
       } else {
         buf.write('>');
         for (var child in node.children) {
-          _renderInto(tabs + 1, child, buf);
+          _renderInto(tabs + 1, child, buf, node);
         }
         buf.writeln();
         _applyTabs(tabs, buf);
@@ -140,4 +112,38 @@ class _PrettyStringRendererImpl implements StringRenderer {
     _renderInto(0, rootNode, buf);
     return buf.toString();
   }
+}
+
+const _escapeText = HtmlEscape(HtmlEscapeMode.element);
+const _escapeAttribute = HtmlEscape(HtmlEscapeMode.attribute);
+
+/// Elements whose text browsers do not decode, so it must not be escaped.
+const _rawTextElements = {'script', 'style'};
+
+void _renderText(TextNode node, Node? parent, StringBuffer buf) {
+  if (node is RawNode || _rawTextElements.contains(parent?.tagName)) {
+    buf.write(node.text);
+  } else {
+    buf.write(_escapeText.convert(node.text));
+  }
+}
+
+void _renderAttributes(Node node, StringBuffer buf) {
+  node.attributes.forEach((k, v) {
+    if (v == true) {
+      buf.write(' $k');
+    } else if (v == false || v == null) {
+      // Ignore
+    } else {
+      String val;
+      if (v is Iterable) {
+        val = v.join(' ');
+      } else if (v is Map) {
+        val = v.keys.fold<String>('', (out, k) => out += '$k: ${v[k]};');
+      } else {
+        val = v.toString();
+      }
+      buf.write(' $k="${_escapeAttribute.convert(val)}"');
+    }
+  });
 }

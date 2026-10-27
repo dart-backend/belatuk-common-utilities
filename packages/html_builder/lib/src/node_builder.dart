@@ -5,28 +5,38 @@ class NodeBuilder {
   final String tagName;
   final Map<String, dynamic> attributes;
   final Iterable<Node> children;
+
+  /// Whether [build] creates a [SelfClosingNode] by default.
+  final bool selfClosing;
   Node? _existing;
 
   NodeBuilder(
     this.tagName, {
     this.attributes = const {},
     this.children = const [],
+    this.selfClosing = false,
   });
 
   /// Creates a [NodeBuilder] that just spits out an already-existing [Node].
   factory NodeBuilder.existing(Node existingNode) =>
       NodeBuilder(existingNode.tagName).._existing = existingNode;
 
-  factory NodeBuilder.from(Node node) => NodeBuilder(
-    node.tagName,
-    attributes: Map<String, dynamic>.from(node.attributes),
-    children: List<Node>.from(node.children),
-  );
+  /// Creates a [NodeBuilder] from a copy of [node], keeping whether it is self-closing.
+  ///
+  /// A [TextNode] has no tag, attributes or children to change, so it is kept as it is.
+  factory NodeBuilder.from(Node node) => node is TextNode
+      ? NodeBuilder.existing(node)
+      : NodeBuilder(
+          node.tagName,
+          attributes: Map<String, dynamic>.from(node.attributes),
+          children: List<Node>.from(node.children),
+          selfClosing: node is SelfClosingNode,
+        );
 
-  /// Builds the node.
-  Node build({bool selfClosing = false}) =>
+  /// Builds the node. If [selfClosing] is omitted, the builder's own [selfClosing] is used.
+  Node build({bool? selfClosing}) =>
       _existing ??
-      (selfClosing
+      ((selfClosing ?? this.selfClosing)
           ? SelfClosingNode(tagName, attributes)
           : Node(tagName, attributes, children));
 
@@ -40,6 +50,7 @@ class NodeBuilder {
       tagName ?? this.tagName,
       attributes: attributes ?? this.attributes,
       children: children ?? this.children,
+      selfClosing: selfClosing,
     );
   }
 
@@ -104,8 +115,8 @@ class NodeBuilder {
   }
 
   NodeBuilder addClass(String className) => setClassesMapped(
-    (classes) => classes.contains(className) ? classes : classes
-      ..add(className),
+    (classes) =>
+        classes.contains(className) ? classes : (classes..add(className)),
   );
 
   NodeBuilder removeClass(String className) =>
